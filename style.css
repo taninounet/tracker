@@ -1,0 +1,79 @@
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #bdbdbd;
+}
+
+#hour-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #e0e0e0;
+  display: flex;
+  height: 32px;
+  border-bottom: 1px solid #aaa;
+}
+
+.hour-label {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: #555;
+  border-left: 1px solid rgba(0,0,0,0.1);
+  line-height: 32px;
+}
+
+#timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.day-row {
+  position: relative;
+  height: 90px;
+  background: #cfcfcf;
+  border-bottom: 1px solid #aaa;
+}
+
+.day-label {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  font-size: 12px;
+  z-index: 3;
+}
+
+.hour-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.hour-grid div {
+  flex: 1;
+  border-left: 1px solid rgba(0,0,0,0.08);
+}
+
+.awake-block {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #ffffff;
+  z-index: 1;
+}
+
+.event {
+  position: absolute;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: #000;
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* placeholder colors */
+.event.run { background: #90caf9; }
+.event.food { background: #a5d6a7; }
+.event.work { background: #ffe082; }
+.event.sleep { background: #ce93d8; }
