@@ -28,7 +28,13 @@ function classify(label) {
 fetch(DOC_URL)
   .then(r => r.text())
   .then(raw => {
-    const lines = raw.replace(/<[^>]+>/g, "").split("\n");
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(raw, "text/html");
+    
+    const lines = doc.body.innerText
+      .split("\n")
+      .map(l => l.trim());
+
     let currentDay = null;
     let days = [];
 
