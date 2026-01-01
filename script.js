@@ -1,6 +1,6 @@
-// 🔁 REPLACE with your *published* Google Doc TXT/HTML export
+// ✅ Google Docs TXT export (NO CORS issues)
 const DOC_URL =
-  "https://docs.google.com/document/d/e/2PACX-1vTttPljynR91dDiovjylkAwcfkUrVLQ1elPoktl_F0ti5i7czxGHP0AQOL-CYBG8WNbFrkLOhfKlrT7/pub?embedded=true";
+  "https://docs.google.com/document/d/1WTC4OuGIHjd7BJMvV9gNSNjptupzSFCtRmtXEeY1Fbg/export?format=txt";
 
 const timeline = document.getElementById("timeline");
 const hourHeader = document.getElementById("hour-header");
@@ -14,7 +14,9 @@ for (let h = 0; h < 24; h++) {
 }
 
 // ---------- helpers ----------
-const toMinutes = t => parseInt(t.slice(0,2)) * 60 + parseInt(t.slice(2));
+function toMinutes(t) {
+  return parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(2), 10);
+}
 
 function classify(label) {
   const l = label.toLowerCase();
@@ -24,42 +26,49 @@ function classify(label) {
   return "work";
 }
 
-// ---------- fetch & render ----------
+// ---------- fetch & parse ----------
 fetch(DOC_URL)
-  .then(r => r.text())
-  .then(raw => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(raw, "text/html");
-    
-    const lines = doc.body.innerText
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to fetch document");
+    return res.text();
+  })
+  .then(text => {
+    console.log("RAW DOC TEXT:", text); // 👈 debug, remove later
+
+    const lines = text
       .split("\n")
-      .map(l => l.trim());
+      .map(l => l.trim())
+      .filter(Boolean);
 
     let currentDay = null;
-    let days = [];
+    const days = [];
 
     lines.forEach(line => {
-      line = line.trim();
-      if (!line) return;
-
       if (/^\d{2}\/\d{2}\/\d{2}$/.test(line)) {
         currentDay = { date: line, events: [] };
         days.push(currentDay);
-      } else if (currentDay) {
-        const match = line.match(
-          /^(\d{4})(?:-(\d{4}))?\s+(.*)$/
-        );
-        if (!match) return;
-
-        const start = toMinutes(match[1]);
-        const end = match[2] ? toMinutes(match[2]) : start + 10;
-        currentDay.events.push({
-          start, end, label: match[3]
-        });
+        return;
       }
+
+      if (!currentDay) return;
+
+      const m = line.match(/^(\d{4})(?:-(\d{4}))?\s+(.*)$/);
+      if (!m) return;
+
+      const start = toMinutes(m[1]);
+      const end = m[2] ? toMinutes(m[2]) : start + 10;
+
+      currentDay.events.push({
+        start,
+        end,
+        label: m[3]
+      });
     });
 
-    days.forEach(day => renderDay(day));
+    days.forEach(renderDay);
+  })
+  .catch(err => {
+    console.error("TIMELINE ERROR:", err);
   });
 
 // ---------- render ----------
@@ -77,10 +86,11 @@ function renderDay(day) {
   for (let i = 0; i < 24; i++) grid.appendChild(document.createElement("div"));
   row.appendChild(grid);
 
-  // wake/sleep window
+  // wake → sleep window
   const wake = day.events.find(e => e.label.toLowerCase().includes("wake"));
   const sleep = day.events.find(e => e.label.toLowerCase().includes("sleep"));
-  if (wake && sleep) {
+
+  if (wake && sleep && sleep.start > wake.start) {
     const awakeBlock = document.createElement("div");
     awakeBlock.className = "awake-block";
     awakeBlock.style.left = `${(wake.start / 1440) * 100}%`;
@@ -89,7 +99,7 @@ function renderDay(day) {
     row.appendChild(awakeBlock);
   }
 
-  // overlap handling
+  // concurrency lanes
   const lanes = [];
 
   day.events.forEach(e => {
@@ -113,9 +123,11 @@ function renderDay(day) {
     div.style.left = `${(e.start / 1440) * 100}%`;
     div.style.width = `${((e.end - e.start) / 1440) * 100}%`;
 
-    const height = 70 / Math.min(e.laneCount, 3);
+    const lanesUsed = Math.min(e.laneCount, 3);
+    const height = 64 / lanesUsed;
+
     div.style.height = `${height}px`;
-    div.style.top = `${20 + e.lane * height}px`;
+    div.style.top = `${22 + e.lane * height}px`;
 
     row.appendChild(div);
   });
