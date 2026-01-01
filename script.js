@@ -1,6 +1,6 @@
 // 🔁 REPLACE with your *published* Google Doc TXT/HTML export
 const DOC_URL =
-  "https://docs.google.com/document/d/e/2PACX-1vTttPljynR91dDiovjylkAwcfkUrVLQ1elPoktl_F0ti5i7czxGHP0AQOL-CYBG8WNbFrkLOhfKlrT7/pub";
+  "https://docs.google.com/document/d/e/2PACX-1vTttPljynR91dDiovjylkAwcfkUrVLQ1elPoktl_F0ti5i7czxGHP0AQOL-CYBG8WNbFrkLOhfKlrT7/pub?embedded=true";
 
 const timeline = document.getElementById("timeline");
 const hourHeader = document.getElementById("hour-header");
