@@ -181,7 +181,7 @@ function renderDay(day) {
   row.appendChild(label);
 
   // sleep background blocks (always full height, no vertical padding)
-  addSleepBlocks(row, day);
+  addSleepBlocks(row, day, days.indexOf(day));
 
   // normal events
   layoutEvents(day.events);
@@ -268,41 +268,57 @@ function renderDay(day) {
    - mirror logic for the other side
 */
 
-function addSleepBlocks(row, day) {
+function addSleepBlocks(row, day, dayIndex) {
   const spanEnd = DAY_START + DAY_SPAN;
+  const prev = days[dayIndex - 1];
+  const next = days[dayIndex + 1];
 
-  function addBlock(start, end) {
+  function addBlock(start, end, roundLeft, roundRight) {
     const s = Math.max(start, DAY_START);
     const e = Math.min(end, spanEnd);
     if (e <= s) return;
 
     const div = document.createElement("div");
+    div.className = "sleep-bg";
 
-    const leftEdge = (s === DAY_START);
-    const rightEdge = (e === spanEnd);
+    if (roundLeft) div.classList.add("round-left");
+    if (roundRight) div.classList.add("round-right");
 
-    // classes control which side is rounded (transition edge only)
-    if (leftEdge && !rightEdge) div.className = "sleep-bg round-right";
-    else if (rightEdge && !leftEdge) div.className = "sleep-bg round-left";
-    else div.className = "sleep-bg"; // (rare) middle-only
-
-    // Positioning:
-    // If we touch an edge, use left/right so we truly hit the viewport edge with NO rounding there.
-    if (leftEdge) {
-      div.style.left = "0%";
-    } else {
-      div.style.left = `${((s - DAY_START) / DAY_SPAN) * 100}%`;
-    }
-
-    if (rightEdge) {
-      div.style.right = "0%";
-      // width not needed when right is set
-    } else {
-      div.style.width = `${((e - s) / DAY_SPAN) * 100}%`;
-    }
+    div.style.left = `${((s - DAY_START) / DAY_SPAN) * 100}%`;
+    div.style.width = `${((e - s) / DAY_SPAN) * 100}%`;
 
     row.appendChild(div);
   }
+
+  /* ───── morning sleep (prev day → this day) ───── */
+
+  if (typeof day.wake === "number" && day.wake > DAY_START) {
+    const prevSleep = prev?.sleep ?? null;
+
+    const roundRight =
+      prevSleep === null || prevSleep < day.wake;
+
+    const roundLeft =
+      prevSleep !== null && prevSleep > day.wake;
+
+    addBlock(DAY_START, day.wake, roundLeft, roundRight);
+  }
+
+  /* ───── evening sleep (this day → next day) ───── */
+
+  if (typeof day.sleep === "number" && day.sleep < spanEnd) {
+    const nextWake = next?.wake ?? null;
+
+    const roundLeft =
+      nextWake === null || nextWake > day.sleep;
+
+    const roundRight =
+      nextWake !== null && nextWake < day.sleep;
+
+    addBlock(day.sleep, spanEnd, roundLeft, roundRight);
+  }
+}
+
 
   // Morning sleep: from 05:00 to wake (flush left edge, round on the wake boundary)
   if (typeof day.wake === "number" && day.wake > DAY_START) {
