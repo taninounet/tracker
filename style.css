@@ -82,6 +82,8 @@ body {
 
 /* ───────── sleep background — subtle wave lines only ───────── */
 
+/* ───────── sleep background — subtle dotted pattern ───────── */
+
 .sleep-bg {
   position: absolute;
   top: 0;
@@ -89,21 +91,18 @@ body {
   z-index: 2;
   border-radius: 10px;
 
-  /* NO base fill — keep page white */
+  /* keep background white / transparent */
   background-color: transparent;
 
-  /* soft wave-like diagonal lines */
-  background-image:
-    repeating-linear-gradient(
-      135deg,
-      rgba(0, 0, 0, 0.08) 0px,
-      rgba(0, 0, 0, 0.08) 2px,
-      transparent 2px,
-      transparent 14px
-    );
+  /* light dotted pattern */
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.10) 1px,
+    transparent 1px
+  );
 
-  background-size: 32px 32px;
+  background-size: 14px 14px;
 }
+
 
 
 
