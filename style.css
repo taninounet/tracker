@@ -78,14 +78,42 @@ body {
 /* ───────── sleep background ───────── */
 /* flat, no transparency, no grid bleed */
 
-.sleep-bg{
+/* ───────── sleep background — diagonal wave pattern ───────── */
+
+.sleep-bg {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--sleep);
   z-index: 2;
   border-radius: 10px;
+
+  /* base light gray */
+  background-color: #f0f2f4;
+
+  /* diagonal wave pattern */
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      rgba(0, 0, 0, 0.06) 0px,
+      rgba(0, 0, 0, 0.06) 6px,
+      rgba(0, 0, 0, 0.00) 6px,
+      rgba(0, 0, 0, 0.00) 14px
+    ),
+    repeating-radial-gradient(
+      circle at 0 0,
+      rgba(0, 0, 0, 0.035) 0px,
+      rgba(0, 0, 0, 0.035) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+
+  background-size:
+    20px 20px,
+    40px 40px;
+
+  background-blend-mode: multiply;
 }
+
 
 /* ───────── events — LIQUID GLASS ───────── */
 
