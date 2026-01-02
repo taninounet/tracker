@@ -1,21 +1,29 @@
-// ✅ Google Docs TXT export (NO CORS issues)
 const DOC_URL =
   "https://docs.google.com/document/d/1WTC4OuGIHjd7BJMvV9gNSNjptupzSFCtRmtXEeY1Fbg/export?format=txt";
 
 const timeline = document.getElementById("timeline");
 const hourHeader = document.getElementById("hour-header");
 
+// timeline bounds
+const DAY_START = 5 * 60;          // 05:00
+const DAY_END = DAY_START + 1440;  // 04:00 next day
+
 // ---------- hour labels ----------
-for (let h = 0; h < 24; h++) {
+for (let i = 0; i < 24; i++) {
+  const hour = (5 + i) % 24;
   const d = document.createElement("div");
   d.className = "hour-label";
-  d.textContent = `${String(h).padStart(2, "0")}:00`;
+  d.textContent = `${String(hour).padStart(2, "0")}:00`;
   hourHeader.appendChild(d);
 }
 
 // ---------- helpers ----------
 function toMinutes(t) {
   return parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(2), 10);
+}
+
+function normalize(min) {
+  return min < DAY_START ? min + 1440 : min;
 }
 
 function classify(label) {
@@ -28,13 +36,8 @@ function classify(label) {
 
 // ---------- fetch & parse ----------
 fetch(DOC_URL)
-  .then(res => {
-    if (!res.ok) throw new Error("Failed to fetch document");
-    return res.text();
-  })
+  .then(res => res.text())
   .then(text => {
-    console.log("RAW DOC TEXT:", text); // 👈 debug, remove later
-
     const lines = text
       .split("\n")
       .map(l => l.trim())
@@ -55,8 +58,10 @@ fetch(DOC_URL)
       const m = line.match(/^(\d{4})(?:-(\d{4}))?\s+(.*)$/);
       if (!m) return;
 
-      const start = toMinutes(m[1]);
-      const end = m[2] ? toMinutes(m[2]) : start + 10;
+      let start = normalize(toMinutes(m[1]));
+      let end = m[2]
+        ? normalize(toMinutes(m[2]))
+        : start + 10;
 
       currentDay.events.push({
         start,
@@ -66,9 +71,6 @@ fetch(DOC_URL)
     });
 
     days.forEach(renderDay);
-  })
-  .catch(err => {
-    console.error("TIMELINE ERROR:", err);
   });
 
 // ---------- render ----------
@@ -80,24 +82,6 @@ function renderDay(day) {
   label.className = "day-label";
   label.textContent = day.date;
   row.appendChild(label);
-
-  const grid = document.createElement("div");
-  grid.className = "hour-grid";
-  for (let i = 0; i < 24; i++) grid.appendChild(document.createElement("div"));
-  row.appendChild(grid);
-
-  // wake → sleep window
-  const wake = day.events.find(e => e.label.toLowerCase().includes("wake"));
-  const sleep = day.events.find(e => e.label.toLowerCase().includes("sleep"));
-
-  if (wake && sleep && sleep.start > wake.start) {
-    const awakeBlock = document.createElement("div");
-    awakeBlock.className = "awake-block";
-    awakeBlock.style.left = `${(wake.start / 1440) * 100}%`;
-    awakeBlock.style.width =
-      `${((sleep.start - wake.start) / 1440) * 100}%`;
-    row.appendChild(awakeBlock);
-  }
 
   // concurrency lanes
   const lanes = [];
@@ -120,14 +104,16 @@ function renderDay(day) {
     div.className = `event ${classify(e.label)}`;
     div.textContent = e.label;
 
-    div.style.left = `${(e.start / 1440) * 100}%`;
-    div.style.width = `${((e.end - e.start) / 1440) * 100}%`;
+    div.style.left =
+      `${((e.start - DAY_START) / 1440) * 100}%`;
+    div.style.width =
+      `${((e.end - e.start) / 1440) * 100}%`;
 
     const lanesUsed = Math.min(e.laneCount, 3);
-    const height = 64 / lanesUsed;
+    const height = 66 / lanesUsed;
 
     div.style.height = `${height}px`;
-    div.style.top = `${22 + e.lane * height}px`;
+    div.style.top = `${24 + e.lane * height}px`;
 
     row.appendChild(div);
   });
