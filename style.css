@@ -5,13 +5,17 @@
 :root{
   --bg: #ffffff;
 
-  /* darker, richer pastels */
-  --work:  #f3d98c;
-  --food:  #bfe2c9;
-  --run:   #b9cffc;
+  /* darker (but still soft) event palette */
+  --work-glass: rgba(232, 195, 70, 0.55);
+  --food-glass: rgba(120, 205, 155, 0.48);
+  --run-glass:  rgba(120, 165, 255, 0.48);
 
-  /* sleep slab */
-  --sleep: #e3e5e8;
+  /* sleep */
+  --sleep: rgba(0,0,0,0.085);
+
+  /* glass border/highlight */
+  --glass-border: rgba(255,255,255,0.55);
+  --glass-sheen: rgba(255,255,255,0.35);
 }
 
 /* ───────── base ───────── */
@@ -22,7 +26,7 @@ body {
   background: var(--bg);
 }
 
-/* ───────── hour header (text only) ───────── */
+/* ───────── hour header ───────── */
 
 #hour-header {
   position: sticky;
@@ -32,20 +36,21 @@ body {
   grid-template-columns: repeat(24, 1fr);
   height: 40px;
   background: var(--bg);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
 .hour {
+  position: relative;
   text-align: center;
   font-size: 12px;
   line-height: 40px;
-  color: #6b7280;
-  font-weight: 500;
+  color: rgba(17, 24, 39, 0.55);
+  font-weight: 600;
 }
 
-/* remove all grid lines */
-.hour::before,
-.hour::after {
-  display: none !important;
+/* ✅ REMOVE ALL grid lines (hour + half-hour) */
+.hour::after,
+.hour::before {
   content: none !important;
 }
 
@@ -62,89 +67,72 @@ body {
 .day-row {
   position: relative;
   background: var(--bg);
-  overflow: hidden; /* 👈 critical for clean edges */
 }
 
-/* date label always above */
 .day-label {
   position: absolute;
   left: 10px;
   top: 8px;
   font-size: 12px;
-  font-weight: 600;
-  z-index: 6;
+  font-weight: 700;
+  z-index: 8;
   color: #111827;
 }
 
-/* ───────── sleep background — CONTINUOUS SLAB ───────── */
+/* ───────── sleep background ─────────
+   Goal:
+   - fill to page edges cleanly (no white “pigments”)
+   - rounded ONLY at the sleep↔wake boundary
+*/
 
 .sleep-bg{
   position: absolute;
   top: 0;
   bottom: 0;
-
-  /* 👇 extend fully to page edge */
-  left: 0 !important;
-
   background: var(--sleep);
   z-index: 2;
-
-  /* rounded ONLY on wake-facing edge */
-  border-top-right-radius: 18px;
-  border-bottom-right-radius: 18px;
+  border-radius: 0; /* default: square */
 }
 
-/* ───────── events — darker liquid glass ───────── */
+/* morning block: flush left edge, rounded on RIGHT only */
+.sleep-bg.round-right{
+  border-radius: 0 18px 18px 0;
+}
+
+/* evening block: flush right edge, rounded on LEFT only */
+.sleep-bg.round-left{
+  border-radius: 18px 0 0 18px;
+}
+
+/* ───────── events (LIQUID GLASS, no big shadow) ───────── */
 
 .event {
   position: absolute;
   border-radius: 14px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   box-sizing: border-box;
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 
-  backdrop-filter: blur(10px) saturate(145%);
-  -webkit-backdrop-filter: blur(10px) saturate(145%);
+  /* glass */
+  backdrop-filter: blur(10px) saturate(1.35);
+  -webkit-backdrop-filter: blur(10px) saturate(1.35);
 
+  border: 1px solid var(--glass-border);
+
+  /* ✅ NOT the “big background shadow” (keep it crisp + subtle) */
   box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    inset 0 1px 0 var(--glass-sheen),
+    0 1px 0 rgba(0,0,0,0.05);
 
-  border: 1px solid rgba(255, 255, 255, 0.35);
-
-  z-index: 5;
+  z-index: 6; /* above sleep + everything */
+  color: rgba(17,24,39,0.92);
 }
 
-/* ───────── darker glass tints ───────── */
-
-.event.work {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(243, 217, 140, 0.85),
-      rgba(243, 217, 140, 0.55)
-    );
-}
-
-.event.food {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(191, 226, 201, 0.85),
-      rgba(191, 226, 201, 0.55)
-    );
-}
-
-.event.run {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(185, 207, 252, 0.85),
-      rgba(185, 207, 252, 0.55)
-    );
-}
+/* liquid-glass fills per type */
+.event.work  { background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.10)), var(--work-glass); }
+.event.food  { background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.10)), var(--food-glass); }
+.event.run   { background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.10)), var(--run-glass); }
