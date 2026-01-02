@@ -1,5 +1,6 @@
 /* ───── CONFIG ───── */
 
+
 const DOC_URL =
   "https://docs.google.com/document/d/1WTC4OuGIHjd7BJMvV9gNSNjptupzSFCtRmtXEeY1Fbg/export?format=txt";
 
