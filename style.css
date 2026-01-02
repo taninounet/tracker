@@ -13,17 +13,17 @@
   /* sleep background (flat, calm) */
   --sleep: #e6e8eb;
 
-
   /* event categories (hashtag driven) */
   --cat-default: #d1d5db; /* gray for events with no tag */
 
-  --cat-eth:   #215CAF; /* ETH Blue */
-  --cat-run:   #89F336; /* lime green */
-  --cat-leet:  #000000; /* black */
-  --cat-quant: #1E3A8A; /* Optiver blue */
-  --cat-duo:   #58CC02; /* Duolingo green */
-  --cat-aldi:  #FF7801; /* Aldi orange */
-  --cat-easy:  #FF6600; /* easyJet orange */
+  /* UPDATED PER YOUR HEXES */
+  --cat-eth:   #023f80;
+  --cat-run:   #cdff21;
+  --cat-leet:  #000000;
+  --cat-quant: #1b3254;
+  --cat-duo:   #58CC02;
+  --cat-aldi:  #ffc20e;
+  --cat-easy:  #fe6800;
 }
 
 /* ───────── base ───────── */
@@ -88,13 +88,6 @@ body {
 }
 
 /* ───────── sleep background ───────── */
-/* flat, no transparency, no grid bleed */
-
-/* ───────── sleep background — diagonal wave pattern ───────── */
-
-/* ───────── sleep background — subtle wave lines only ───────── */
-
-/* ───────── sleep background — subtle dotted pattern ───────── */
 
 .sleep-bg {
   position: absolute;
@@ -103,10 +96,8 @@ body {
   z-index: 2;
   border-radius: 10px;
 
-  /* keep background white / transparent */
   background-color: transparent;
 
-  /* light dotted pattern */
   background-image: radial-gradient(
     rgba(0, 0, 0, 0.10) 1px,
     transparent 1px
@@ -114,9 +105,6 @@ body {
 
   background-size: 14px 14px;
 }
-
-
-
 
 /* ───────── events — LIQUID GLASS ───────── */
 
@@ -128,10 +116,7 @@ body {
   font-weight: 500;
   box-sizing: border-box;
 
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-
+  /* IMPORTANT: no flex, so icon does NOT reserve layout space */
   white-space: normal;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -156,12 +141,20 @@ body {
 }
 
 /* ───────── category icon ───────── */
-
+/* Absolute overlay so text can start at the same left edge (no indentation) */
 .event-icon{
-  height: 11px;        /* match text size */
+  position: absolute;
+  left: 10px;   /* matches .event padding-left */
+  top: 6px;     /* matches .event padding-top */
+  height: 11px; /* match text size */
   width: auto;
-  flex: 0 0 auto;
-  margin-top: 1px;     /* tiny optical align to first line */
+  pointer-events: none;
+}
+
+/* text block stays normal; can wrap starting at icon edge */
+.event-text{
+  display: block;
+  min-width: 0;
 }
 
 /* ───────── hashtag category colors ───────── */
@@ -198,16 +191,12 @@ body {
 
 .event[data-cat="aldi"]{
   background: var(--cat-aldi);
-  color: #ffffff;
+  color: #111827;
 }
 
 .event[data-cat="easy"]{
   background: var(--cat-easy);
   color: #ffffff;
-}
-
-.event-text{
-  min-width: 0;
 }
 
 /* ───────── glass-tinted pastel colors ───────── */
