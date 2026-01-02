@@ -16,7 +16,7 @@
   /* event categories (hashtag driven) */
   --cat-default: #d1d5db; /* gray for events with no tag */
 
-  /* UPDATED PER YOUR HEXES */
+  /* YOUR HEXES */
   --cat-eth:   #023f80;
   --cat-run:   #cdff21;
   --cat-leet:  #000000;
@@ -141,7 +141,7 @@ body {
 }
 
 /* ───────── category icon ───────── */
-/* Absolute overlay so text can start at the same left edge (no indentation) */
+/* Absolute overlay so wrapped lines can start at icon edge */
 .event-icon{
   position: absolute;
   left: 10px;   /* matches .event padding-left */
@@ -151,10 +151,12 @@ body {
   pointer-events: none;
 }
 
-/* text block stays normal; can wrap starting at icon edge */
+/* ✅ FIX: first line only gets indented so it doesn't sit under the icon.
+   Wrapped lines start at the normal left edge again. */
 .event-text{
   display: block;
   min-width: 0;
+  text-indent: 18px; /* only first line */
 }
 
 /* ───────── hashtag category colors ───────── */
