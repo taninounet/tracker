@@ -3,10 +3,11 @@
 const DOC_URL =
   "https://docs.google.com/document/d/1WTC4OuGIHjd7BJMvV9gNSNjptupzSFCtRmtXEeY1Fbg/export?format=txt";
 
-const DAY_START = 5 * 60;     // 05:00
+const DAY_START = 5 * 60;   // 05:00
 const DAY_SPAN  = 1440;
 const DAY_HEIGHT = 100;
 const PADDING = 4;
+const MAX_BANDS = 3;
 
 /* ───────── DOM ───────── */
 
@@ -37,7 +38,7 @@ function classify(label) {
   return "work";
 }
 
-/* ───────── generate 2026 ───────── */
+/* ───────── generate 2026 days ───────── */
 
 const days = [];
 const dayMap = {};
@@ -79,9 +80,10 @@ fetch(DOC_URL)
     days.forEach(renderDay);
   });
 
-/* ───────── layout logic (YOUR RULE) ───────── */
+/* ───────── LAYOUT ENGINE (CORRECT) ───────── */
 
 function layoutEvents(events) {
+  // 1. max overlap per event
   events.forEach(e => {
     e.maxOverlap = 0;
     events.forEach(o => {
@@ -91,17 +93,30 @@ function layoutEvents(events) {
     });
   });
 
+  // 2. height class
   events.forEach(e => {
     if (e.maxOverlap >= 2) e.frac = 1 / 3;
     else if (e.maxOverlap === 1) e.frac = 1 / 2;
     else e.frac = 1;
   });
 
-  let cursor = PADDING;
+  // 3. band assignment (graph coloring, max 3)
+  events.sort((a, b) => a.start - b.start);
+
+  const active = [];
+
   events.forEach(e => {
-    e.topPx = cursor;
-    e.baseHeight = DAY_HEIGHT * e.frac - PADDING;
-    cursor += e.baseHeight + PADDING;
+    // remove inactive
+    for (let i = active.length - 1; i >= 0; i--) {
+      if (active[i].end <= e.start) active.splice(i, 1);
+    }
+
+    const used = active.map(ev => ev.band);
+    let band = 0;
+    while (used.includes(band) && band < MAX_BANDS) band++;
+
+    e.band = band;
+    active.push(e);
   });
 }
 
@@ -123,11 +138,13 @@ function renderDay(day) {
     div.className = `event ${classify(e.label)}`;
     div.textContent = e.label;
 
+    // horizontal placement
     div.style.left =
       `${((e.start - DAY_START) / DAY_SPAN) * 100}%`;
     div.style.width =
       `${((e.end - e.start) / DAY_SPAN) * 100}%`;
 
+    // promotion: 1/2 next to 1/3 → 2/3
     const promoted =
       e.frac === 1/2 &&
       day.events.some(o =>
@@ -137,10 +154,11 @@ function renderDay(day) {
         e.end > o.start
       );
 
-    const height = DAY_HEIGHT * (promoted ? 2/3 : e.frac) - PADDING;
+    const frac = promoted ? 2/3 : e.frac;
+    const bandHeight = DAY_HEIGHT / MAX_BANDS;
 
-    div.style.height = `${height}px`;
-    div.style.top = `${e.topPx}px`;
+    div.style.height = `${bandHeight * frac - PADDING}px`;
+    div.style.top = `${e.band * bandHeight + PADDING}px`;
 
     row.appendChild(div);
   });
