@@ -4,23 +4,12 @@ const DOC_URL =
   "https://docs.google.com/document/d/1WTC4OuGIHjd7BJMvV9gNSNjptupzSFCtRmtXEeY1Fbg/export?format=txt";
 
 const DAY_START = 5 * 60;   // 05:00
-const DAY_SPAN = 1440;      // 24h view window
-const DAY_HEIGHT = 100;     // px (keep in sync with .day-row height in CSS)
+const DAY_SPAN = 1440;      // 24h window from DAY_START to next DAY_START
+const DAY_HEIGHT = 100;     // px height of each day row
 
-/*
-  vertical geometry (your rule):
-  N = DAY_HEIGHT
-  E = 3% of N (top and bottom padding)
-  gap = 2*E (between stacked bands, and between neighbouring days' events)
-*/
-const E_FRAC = 0.03;
-const GAP_FRAC = 0.06; // = 2 * E_FRAC
-
-/*
-  Triple-overlap layout you specified:
-  3% pad + 27% + 6% + 28% + 6% + 27% + 3% = 100%
-*/
-const BAND_FRACS = [0.27, 0.28, 0.27];
+// padding and gaps as % of DAY_HEIGHT
+const PAD_FRAC = 0.03;      // 3% top + 3% bottom
+const GAP_FRAC = 0.06;      // 6% between stacked events (and therefore also 2*PAD)
 
 /* ───── DOM ───── */
 
@@ -40,18 +29,16 @@ for (let i = 0; i < 24; i++) {
 
 const toMinutes = t => parseInt(t.slice(0, 2)) * 60 + parseInt(t.slice(2));
 const normalize = m => (m < DAY_START ? m + 1440 : m);
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
-function overlaps(a, b) {
-  return a.start < b.end && a.end > b.start;
-}
 
 function classify(label) {
   const l = label.toLowerCase();
-  if (/^\d{4}\.$/.test(label.trim())) return "marker";
   if (l.includes("run") || l.includes("gym")) return "run";
   if (l.includes("lunch") || l.includes("dinner") || l.includes("breakfast")) return "food";
   return "work";
+}
+
+function overlaps(a, b) {
+  return a.start < b.end && a.end > b.start;
 }
 
 /* ───── generate 2026 days ───── */
@@ -66,7 +53,7 @@ for (
 ) {
   const iso = d.toISOString().slice(0, 10);
   const label = d.toLocaleDateString("en-GB");
-  const day = { iso, label, events: [], wake: null, sleep: null, sleepBlocks: [] };
+  const day = { iso, label, events: [], dotTimes: [], wake: null, sleep: null };
   days.push(day);
   dayMap[iso] = day;
 }
@@ -80,24 +67,22 @@ fetch(DOC_URL)
     let currentDay = null;
 
     lines.forEach(line => {
+      // date header
       const dm = line.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (dm) {
         currentDay = dayMap[`${dm[3]}-${dm[2]}-${dm[1]}`] || null;
         return;
       }
-
       if (!currentDay) return;
 
-      // marker line: 0913.
-      const mm = line.match(/^(\d{4})\.$/);
-      if (mm) {
-        const start = normalize(toMinutes(mm[1]));
-        const end = start + 10; // tiny visible pill
-        currentDay.events.push({ start, end, label: `${mm[1]}.`, _isMarker: true });
+      // wake/sleep marker like "0913."
+      const tm = line.match(/^(\d{4})\.$/);
+      if (tm) {
+        currentDay.dotTimes.push(normalize(toMinutes(tm[1])));
         return;
       }
 
-      // normal event line: 0945-1030 Breakfast & planning  OR 2230 Reading
+      // normal event
       const em = line.match(/^(\d{4})(?:-(\d{4}))?\s+(.*)$/);
       if (!em) return;
 
@@ -107,119 +92,79 @@ fetch(DOC_URL)
       currentDay.events.push({ start, end, label: em[3] });
     });
 
-    // derive wake/sleep times from marker entries per day
-    days.forEach(day => {
-      const markers = day.events
-        .filter(e => e._isMarker)
-        .sort((a, b) => a.start - b.start);
-
-      if (markers.length) {
-        day.wake = markers[0].start;
-        day.sleep = markers[markers.length - 1].start;
-      }
-
-      // compute sleep blocks for the view window [DAY_START, DAY_START + DAY_SPAN]
-      const viewStart = DAY_START;
-      const viewEnd = DAY_START + DAY_SPAN;
-
-      // morning sleep: from viewStart to today's wake
-      if (day.wake != null) {
-        const wake = clamp(day.wake, viewStart, viewEnd);
-        if (wake > viewStart) day.sleepBlocks.push({ start: viewStart, end: wake });
-      }
-
-      // evening sleep: from today's sleep to viewEnd
-      if (day.sleep != null) {
-        const sleep = clamp(day.sleep, viewStart, viewEnd);
-        if (sleep < viewEnd) day.sleepBlocks.push({ start: sleep, end: viewEnd });
+    // decide wake (first dotted time) + sleep (last dotted time) per day
+    days.forEach(d => {
+      if (d.dotTimes.length) {
+        d.wake = d.dotTimes[0];
+        d.sleep = d.dotTimes[d.dotTimes.length - 1];
       }
     });
 
     days.forEach(renderDay);
   });
 
-/* ───── layout engine ───── */
-
-function computeFractions(events) {
-  // ignore markers for overlap sizing rules (they're tiny)
-  const real = events.filter(e => !e._isMarker);
-
-  real.forEach(e => {
-    e.maxOverlap = 0;
-    real.forEach(o => {
-      if (e !== o && overlaps(e, o)) e.maxOverlap++;
-    });
-  });
-
-  real.forEach(e => {
-    // if at any point it shares time with 2 other events => always third height
-    if (e.maxOverlap >= 2) e.frac = 1 / 3;
-    else if (e.maxOverlap === 1) e.frac = 1 / 2;
-    else e.frac = 1;
-  });
-
-  // markers: never influence promotions
-  events.forEach(e => {
-    if (e._isMarker) e.frac = 1 / 2;
-  });
-}
-
-function computeSpan(e, events) {
-  if (e.frac === 1) return 3;
-  if (e.frac === 1 / 3) return 1;
-
-  // promotion rule:
-  // a half-height event that overlaps any third-height event becomes the big 2-band block (61% vibe)
-  const promoted =
-    e.frac === 1 / 2 &&
-    events.some(o => o !== e && o.frac === 1 / 3 && overlaps(e, o));
-
-  return promoted ? 2 : 1;
-}
+/* ───── layout engine ─────
+   Rules:
+   - if an event overlaps *two other* events at the same time at ANY point → fixed "third" height forever
+   - otherwise if it overlaps exactly one other at ANY point → fixed "half" height forever
+   - BUT if a "half" event overlaps any "third" event at any point → it becomes the big 61% height forever
+*/
 
 function layoutEvents(events) {
-  computeFractions(events);
-
+  // compute per-event maximum simultaneous overlap inside its own interval
   events.forEach(e => {
-    e.span = computeSpan(e, events);
+    const boundaries = [];
+    events.forEach(o => {
+      if (e === o) return;
+      if (!overlaps(e, o)) return;
+
+      // overlap segment within e
+      boundaries.push({ t: Math.max(e.start, o.start), type: "start" });
+      boundaries.push({ t: Math.min(e.end, o.end), type: "end" });
+    });
+
+    boundaries.sort((a, b) => (a.t - b.t) || (a.type === "end" ? -1 : 1));
+
+    let active = 0;
+    let maxSimul = 0;
+    for (const p of boundaries) {
+      if (p.type === "start") {
+        active++;
+        maxSimul = Math.max(maxSimul, active);
+      } else {
+        active = Math.max(0, active - 1);
+      }
+    }
+    // maxSimul is how many OTHER events overlap simultaneously; total in that interval is maxSimul + 1 (itself)
+    e.maxSimul = maxSimul + 1;
   });
 
-  // stable placement: earlier start first, longer first
-  events.sort((a, b) => (a.start - b.start) || (b.end - b.start) - (a.end - a.start));
+  // base kind
+  events.forEach(e => {
+    if (e.maxSimul >= 3) e.kind = "third";       // triple-share exists somewhere
+    else if (e.maxSimul === 2) e.kind = "half";  // at most double-share
+    else e.kind = "full";
+  });
 
-  const active = [];
+  // promotion: any "half" overlapping a "third" becomes "big"
+  const thirds = events.filter(e => e.kind === "third");
+  events.forEach(e => {
+    if (e.kind !== "half") return;
+    if (thirds.some(t => overlaps(e, t))) {
+      e.kind = "big";
+    }
+  });
 
-  function maskFor(ev) {
-    if (ev.span === 3) return 0b111;
-    if (ev.span === 2) return ev.band === 0 ? 0b011 : 0b110;
-    return 1 << ev.band;
-  }
+  // lane assignment (0..2) with greedy coloring
+  events.sort((a, b) => a.start - b.start || a.end - b.end);
+  const laneEnd = [-Infinity, -Infinity, -Infinity];
 
   events.forEach(e => {
-    // expire active
-    for (let i = active.length - 1; i >= 0; i--) {
-      if (active[i].end <= e.start) active.splice(i, 1);
-    }
-
-    let occupied = 0;
-    active.forEach(a => { occupied |= maskFor(a); });
-
-    if (e.span === 3) {
-      e.band = 0;
-    } else if (e.span === 2) {
-      // prefer top 2 bands if possible, else bottom 2
-      if ((occupied & 0b011) === 0) e.band = 0;
-      else if ((occupied & 0b110) === 0) e.band = 1;
-      else e.band = 0; // fallback
-    } else {
-      // span 1
-      if ((occupied & 0b001) === 0) e.band = 0;
-      else if ((occupied & 0b010) === 0) e.band = 1;
-      else if ((occupied & 0b100) === 0) e.band = 2;
-      else e.band = 0; // fallback
-    }
-
-    active.push(e);
+    let lane = 0;
+    while (lane < 3 && laneEnd[lane] > e.start) lane++;
+    if (lane >= 3) lane = 2;
+    e.lane = lane;
+    laneEnd[lane] = e.end;
   });
 }
 
@@ -228,42 +173,71 @@ function layoutEvents(events) {
 function renderDay(day) {
   const row = document.createElement("div");
   row.className = "day-row";
+  row.style.height = `${DAY_HEIGHT}px`;
 
   const label = document.createElement("div");
   label.className = "day-label";
   label.textContent = day.label;
   row.appendChild(label);
 
-  // sleep blocks first (above grid, behind events)
-  const viewStart = DAY_START;
-  const viewEnd = DAY_START + DAY_SPAN;
+  // sleep background blocks (always full height, no vertical padding)
+  addSleepBlocks(row, day);
 
-  day.sleepBlocks.forEach(b => {
-    const leftPct = ((b.start - viewStart) / DAY_SPAN) * 100;
-    const widthPct = ((b.end - b.start) / DAY_SPAN) * 100;
-
-    const div = document.createElement("div");
-    div.className = "sleep-block";
-    div.style.left = `${leftPct}%`;
-    div.style.width = `${widthPct}%`;
-    row.appendChild(div);
-  });
-
+  // normal events
   layoutEvents(day.events);
 
-  const N = DAY_HEIGHT;
-  const E = N * E_FRAC;         // 3% top/bottom
-  const GAP = N * GAP_FRAC;     // 6% between stacked blocks
+  const PAD = DAY_HEIGHT * PAD_FRAC;
+  const GAP = DAY_HEIGHT * GAP_FRAC;
 
-  const bandHeights = BAND_FRACS.map(f => f * N);
-  const bandTops = [
-    E,
-    E + bandHeights[0] + GAP,
-    E + bandHeights[0] + GAP + bandHeights[1] + GAP
-  ];
+  // helper giving top+height for a given event in this day
+  function verticalBox(e) {
+    // full height event
+    if (e.kind === "full") {
+      return { top: PAD, height: DAY_HEIGHT - 2 * PAD };
+    }
 
-  const fullTop = E;
-  const fullHeight = N - 2 * E; // 94%
+    // pure 2-stack (half/half)
+    if (e.kind === "half") {
+      const h = DAY_HEIGHT * 0.44;
+      const top = e.lane === 0 ? PAD : (PAD + h + GAP);
+      return { top, height: h };
+    }
+
+    // pure 3-stack (third/third/third): 27/28/27
+    if (e.kind === "third") {
+      const h0 = DAY_HEIGHT * 0.27;
+      const h1 = DAY_HEIGHT * 0.28;
+      const top0 = PAD;
+      const top1 = top0 + h0 + GAP;
+      const top2 = top1 + h1 + GAP;
+
+      if (e.lane === 1) return { top: top1, height: h1 };
+      if (e.lane === 2) return { top: top2, height: h0 };
+      return { top: top0, height: h0 };
+    }
+
+    // mixed stack (big + one third): 27 + gap6 + 61 (or reversed)
+    if (e.kind === "big") {
+      const bigH = DAY_HEIGHT * 0.61;
+      const smallH = DAY_HEIGHT * 0.27;
+
+      // find an overlapping third event to decide whether big goes on top or bottom
+      const t = day.events.find(o => o !== e && o.kind === "third" && overlaps(e, o));
+
+      // default: big on bottom
+      let bigOnTop = false;
+
+      // if lanes suggest a stable ordering, follow it
+      if (t) bigOnTop = e.lane < t.lane;
+      else bigOnTop = (e.lane === 0);
+
+      const topBig = bigOnTop ? PAD : (PAD + smallH + GAP);
+      return { top: topBig, height: bigH };
+    }
+
+    // fallback
+    return { top: PAD, height: DAY_HEIGHT - 2 * PAD };
+  }
 
   day.events.forEach(e => {
     const div = document.createElement("div");
@@ -271,30 +245,44 @@ function renderDay(day) {
     div.textContent = e.label;
 
     // horizontal placement
-    const left = ((e.start - viewStart) / DAY_SPAN) * 100;
-    const width = ((e.end - e.start) / DAY_SPAN) * 100;
-    div.style.left = `${left}%`;
-    div.style.width = `${width}%`;
+    const leftPct = ((e.start - DAY_START) / DAY_SPAN) * 100;
+    const widthPct = ((e.end - e.start) / DAY_SPAN) * 100;
+    div.style.left = `${leftPct}%`;
+    div.style.width = `${widthPct}%`;
 
-    // vertical placement (your exact rules)
-    if (e.span === 3) {
-      div.style.top = `${fullTop}px`;
-      div.style.height = `${fullHeight}px`;
-    } else if (e.span === 2) {
-      const top = bandTops[e.band];
-      const h =
-        e.band === 0
-          ? (bandHeights[0] + GAP + bandHeights[1])
-          : (bandHeights[1] + GAP + bandHeights[2]);
-      div.style.top = `${top}px`;
-      div.style.height = `${h}px`;
-    } else {
-      div.style.top = `${bandTops[e.band]}px`;
-      div.style.height = `${bandHeights[e.band]}px`;
-    }
+    // vertical placement
+    const { top, height } = verticalBox(e);
+    div.style.top = `${top}px`;
+    div.style.height = `${height}px`;
 
     row.appendChild(div);
   });
 
   timeline.appendChild(row);
+}
+
+function addSleepBlocks(row, day) {
+  const spanEnd = DAY_START + DAY_SPAN;
+
+  function addBlock(start, end) {
+    const s = Math.max(start, DAY_START);
+    const e = Math.min(end, spanEnd);
+    if (e <= s) return;
+
+    const div = document.createElement("div");
+    div.className = "sleep-bg";
+    div.style.left = `${((s - DAY_START) / DAY_SPAN) * 100}%`;
+    div.style.width = `${((e - s) / DAY_SPAN) * 100}%`;
+    row.appendChild(div);
+  }
+
+  // Morning sleep: from 05:00 to wake
+  if (typeof day.wake === "number" && day.wake > DAY_START) {
+    addBlock(DAY_START, day.wake);
+  }
+
+  // Evening sleep: from sleep time to end of page (05:00 next day)
+  if (typeof day.sleep === "number" && day.sleep < spanEnd) {
+    addBlock(day.sleep, spanEnd);
+  }
 }
