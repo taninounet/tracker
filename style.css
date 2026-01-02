@@ -1,27 +1,48 @@
-
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  background: #bdbdbd;
+  background: #ffffff;
 }
 
 #hour-header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #e0e0e0;
   display: flex;
-  height: 32px;
-  border-bottom: 1px solid #aaa;
+  height: 42px;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .hour-label {
+  position: relative;
   flex: 1;
   text-align: center;
-  font-size: 11px;
-  color: #555;
-  border-left: 1px solid rgba(0,0,0,0.1);
-  line-height: 32px;
+  font-size: 12px;
+  color: #000;
+  line-height: 42px;
+}
+
+/* main hour line */
+.hour-label::after {
+  content: "";
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  width: 1px;
+  height: 100vh;
+  background: rgba(0,0,0,0.15);
+}
+
+/* 30 min line */
+.hour-label::before {
+  content: "";
+  position: absolute;
+  top: 42px;
+  left: 75%;
+  width: 1px;
+  height: 100vh;
+  background: rgba(0,0,0,0.06);
 }
 
 #timeline {
@@ -31,50 +52,31 @@ body {
 
 .day-row {
   position: relative;
-  height: 90px;
-  background: #cfcfcf;
-  border-bottom: 1px solid #aaa;
+  height: 96px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .day-label {
   position: absolute;
-  left: 4px;
-  top: 4px;
+  left: 6px;
+  top: 6px;
   font-size: 12px;
+  font-weight: 600;
   z-index: 3;
-}
-
-.hour-grid {
-  position: absolute;
-  inset: 0;
-  display: flex;
-}
-
-.hour-grid div {
-  flex: 1;
-  border-left: 1px solid rgba(0,0,0,0.08);
-}
-
-.awake-block {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: #ffffff;
-  z-index: 1;
 }
 
 .event {
   position: absolute;
-  border-radius: 4px;
-  padding: 2px 4px;
+  border-radius: 6px;
+  padding: 2px 6px;
   font-size: 11px;
-  color: #000;
+  box-sizing: border-box;
   z-index: 2;
-  overflow: hidden;
 }
 
 /* placeholder colors */
-.event.run { background: #90caf9; }
-.event.food { background: #a5d6a7; }
-.event.work { background: #ffe082; }
+.event.run   { background: #90caf9; }
+.event.food  { background: #a5d6a7; }
+.event.work  { background: #ffe082; }
 .event.sleep { background: #ce93d8; }
