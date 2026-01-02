@@ -17,7 +17,6 @@ body {
   grid-template-columns: repeat(24, 1fr);
   height: 40px;
   background: white;
-  width: 100vw;
   border-bottom: 1px solid rgba(0,0,0,0.04);
 }
 
@@ -40,7 +39,7 @@ body {
   background: rgba(0,0,0,0.06);
 }
 
-/* half hour line */
+/* half-hour line */
 .hour::before {
   content: "";
   position: absolute;
@@ -55,10 +54,9 @@ body {
 /* ───────── timeline ───────── */
 
 #timeline {
-  width: 100vw;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* 👈 space between days */
+  gap: 12px; /* day spacing */
 }
 
 /* ───────── day row ───────── */
@@ -84,7 +82,7 @@ body {
 .event {
   position: absolute;
   border-radius: 8px;
-  padding: 3px 6px;
+  padding: 4px 8px;
   font-size: 11px;
   box-sizing: border-box;
   white-space: nowrap;
@@ -92,15 +90,16 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Pastel palette */
-.event.work  { background: #f6e7a6; }
-.event.food  { background: #c7e6c7; }
-.event.run   { background: #c7def5; }
+/* Pastels */
+.event.work  { background: #f5e7a3; }
+.event.food  { background: #c9e6cc; }
+.event.run   { background: #cfe0f6; }
 
-/* Sleep: same color as hour markers */
-.event.sleep {
+/* Sleep background */
+.sleep-bg {
+  position: absolute;
+  top: 0;
+  height: 100%;
   background: rgba(0,0,0,0.06);
-  color: transparent;
-  border-radius: 0;
-  padding: 0;
+  z-index: 0;
 }
