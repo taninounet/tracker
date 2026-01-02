@@ -8,41 +8,41 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
-  height: 42px;
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  height: 40px;
   background: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
 }
 
-.hour-label {
+.hour {
   position: relative;
-  flex: 1;
   text-align: center;
   font-size: 12px;
   color: #000;
-  line-height: 42px;
+  line-height: 40px;
 }
 
-/* main hour line */
-.hour-label::after {
+/* hour line */
+.hour::after {
   content: "";
   position: absolute;
-  top: 42px;
+  top: 40px;
   left: 50%;
   width: 1px;
   height: 100vh;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.08);
 }
 
-/* 30 min line */
-.hour-label::before {
+/* half-hour line (exact middle) */
+.hour::before {
   content: "";
   position: absolute;
-  top: 42px;
-  left: 75%;
+  top: 40px;
+  left: 100%;
+  transform: translateX(-50%);
   width: 1px;
   height: 100vh;
-  background: rgba(0,0,0,0.06);
+  background: rgba(0,0,0,0.03);
 }
 
 #timeline {
@@ -52,9 +52,8 @@ body {
 
 .day-row {
   position: relative;
-  height: 96px;
+  height: 100px;
   background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
 }
 
 .day-label {
@@ -69,13 +68,13 @@ body {
 .event {
   position: absolute;
   border-radius: 6px;
-  padding: 2px 6px;
+  padding: 3px 6px;
   font-size: 11px;
   box-sizing: border-box;
   z-index: 2;
 }
 
-/* placeholder colors */
+/* activity colors (temporary) */
 .event.run   { background: #90caf9; }
 .event.food  { background: #a5d6a7; }
 .event.work  { background: #ffe082; }
