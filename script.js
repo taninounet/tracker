@@ -16,7 +16,7 @@ const GAP_FRAC = 0.06;      // 6% between stacked events (and therefore also 2*P
 const timeline = document.getElementById("timeline");
 const hourHeader = document.getElementById("hour-header");
 
-/* ───── hour labels ───── */
+/* ───── hour labels (labels only; NO grid lines are CSS-disabled) ───── */
 
 for (let i = 0; i < 24; i++) {
   const h = document.createElement("div");
@@ -261,6 +261,13 @@ function renderDay(day) {
   timeline.appendChild(row);
 }
 
+/* ───── sleep blocks ─────
+   Fixes:
+   - fill to left/right edges cleanly (no white gaps)
+   - rounded ONLY at the wake/sleep boundary (not at the page edges)
+   - mirror logic for the other side
+*/
+
 function addSleepBlocks(row, day) {
   const spanEnd = DAY_START + DAY_SPAN;
 
@@ -270,18 +277,39 @@ function addSleepBlocks(row, day) {
     if (e <= s) return;
 
     const div = document.createElement("div");
-    div.className = "sleep-bg";
-    div.style.left = `${((s - DAY_START) / DAY_SPAN) * 100}%`;
-    div.style.width = `${((e - s) / DAY_SPAN) * 100}%`;
+
+    const leftEdge = (s === DAY_START);
+    const rightEdge = (e === spanEnd);
+
+    // classes control which side is rounded (transition edge only)
+    if (leftEdge && !rightEdge) div.className = "sleep-bg round-right";
+    else if (rightEdge && !leftEdge) div.className = "sleep-bg round-left";
+    else div.className = "sleep-bg"; // (rare) middle-only
+
+    // Positioning:
+    // If we touch an edge, use left/right so we truly hit the viewport edge with NO rounding there.
+    if (leftEdge) {
+      div.style.left = "0%";
+    } else {
+      div.style.left = `${((s - DAY_START) / DAY_SPAN) * 100}%`;
+    }
+
+    if (rightEdge) {
+      div.style.right = "0%";
+      // width not needed when right is set
+    } else {
+      div.style.width = `${((e - s) / DAY_SPAN) * 100}%`;
+    }
+
     row.appendChild(div);
   }
 
-  // Morning sleep: from 05:00 to wake
+  // Morning sleep: from 05:00 to wake (flush left edge, round on the wake boundary)
   if (typeof day.wake === "number" && day.wake > DAY_START) {
     addBlock(DAY_START, day.wake);
   }
 
-  // Evening sleep: from sleep time to end of page (05:00 next day)
+  // Evening sleep: from sleep time to end of page (flush right edge, round on the sleep boundary)
   if (typeof day.sleep === "number" && day.sleep < spanEnd) {
     addBlock(day.sleep, spanEnd);
   }
