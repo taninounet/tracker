@@ -2,8 +2,9 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: white;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: #ffffff;
+  color: #222;
 }
 
 /* ───────── hour header ───────── */
@@ -17,6 +18,7 @@ body {
   height: 40px;
   background: white;
   width: 100vw;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
 }
 
 .hour {
@@ -24,7 +26,7 @@ body {
   text-align: center;
   font-size: 12px;
   line-height: 40px;
-  color: black;
+  color: #666;
 }
 
 /* hour line */
@@ -56,6 +58,7 @@ body {
   width: 100vw;
   display: flex;
   flex-direction: column;
+  gap: 10px; /* 👈 space between days */
 }
 
 /* ───────── day row ───────── */
@@ -68,10 +71,11 @@ body {
 
 .day-label {
   position: absolute;
-  left: 6px;
+  left: 8px;
   top: 6px;
   font-size: 12px;
   font-weight: 600;
+  color: #444;
   z-index: 5;
 }
 
@@ -79,7 +83,7 @@ body {
 
 .event {
   position: absolute;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 3px 6px;
   font-size: 11px;
   box-sizing: border-box;
@@ -88,8 +92,15 @@ body {
   text-overflow: ellipsis;
 }
 
-/* temporary colors */
-.event.work  { background: #ffe082; }
-.event.food  { background: #a5d6a7; }
-.event.run   { background: #90caf9; }
-.event.sleep { background: #ce93d8; }
+/* Pastel palette */
+.event.work  { background: #f6e7a6; }
+.event.food  { background: #c7e6c7; }
+.event.run   { background: #c7def5; }
+
+/* Sleep: same color as hour markers */
+.event.sleep {
+  background: rgba(0,0,0,0.06);
+  color: transparent;
+  border-radius: 0;
+  padding: 0;
+}
