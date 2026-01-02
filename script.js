@@ -55,7 +55,8 @@ const CATEGORY_MAP = {
   },
   aldi: {
     tags: ["#aldi"],
-    logo: "https://media.sustainabilitytracker.com/uploads/2021/08/103735256_3427868607270616_6808182414616923316_n.png"
+    /* UPDATED */
+    logo: "https://logos-world.net/wp-content/uploads/2022/01/Aldi-Logo.png"
   },
   easy: {
     tags: ["#easy"],
@@ -236,7 +237,7 @@ function renderDay(day) {
   label.textContent = day.label;
   row.appendChild(label);
 
-  // sleep background blocks (always full height, no vertical padding)
+  // sleep background blocks
   addSleepBlocks(row, day);
 
   // normal events
@@ -245,21 +246,17 @@ function renderDay(day) {
   const PAD = DAY_HEIGHT * PAD_FRAC;
   const GAP = DAY_HEIGHT * GAP_FRAC;
 
-  // helper giving top+height for a given event in this day
   function verticalBox(e) {
-    // full height event
     if (e.kind === "full") {
       return { top: PAD, height: DAY_HEIGHT - 2 * PAD };
     }
 
-    // pure 2-stack (half/half)
     if (e.kind === "half") {
       const h = DAY_HEIGHT * 0.44;
       const top = e.lane === 0 ? PAD : (PAD + h + GAP);
       return { top, height: h };
     }
 
-    // pure 3-stack (third/third/third): 27/28/27
     if (e.kind === "third") {
       const h0 = DAY_HEIGHT * 0.27;
       const h1 = DAY_HEIGHT * 0.28;
@@ -272,18 +269,13 @@ function renderDay(day) {
       return { top: top0, height: h0 };
     }
 
-    // mixed stack (big + one third): 27 + gap6 + 61 (or reversed)
     if (e.kind === "big") {
       const bigH = DAY_HEIGHT * 0.61;
       const smallH = DAY_HEIGHT * 0.27;
 
-      // find an overlapping third event to decide whether big goes on top or bottom
       const t = day.events.find(o => o !== e && o.kind === "third" && overlaps(e, o));
 
-      // default: big on bottom
       let bigOnTop = false;
-
-      // if lanes suggest a stable ordering, follow it
       if (t) bigOnTop = e.lane < t.lane;
       else bigOnTop = (e.lane === 0);
 
@@ -291,19 +283,16 @@ function renderDay(day) {
       return { top: topBig, height: bigH };
     }
 
-    // fallback
     return { top: PAD, height: DAY_HEIGHT - 2 * PAD };
   }
 
   day.events.forEach(e => {
     const div = document.createElement("div");
-
     const info = parseCategory(e.label);
 
     div.className = "event";
     if (info.cat) div.dataset.cat = info.cat;
 
-    // icon + text (minimal change: only when a known hashtag exists)
     if (info.cat) {
       const img = document.createElement("img");
       img.className = "event-icon";
@@ -318,13 +307,11 @@ function renderDay(day) {
     span.textContent = info.text;
     div.appendChild(span);
 
-    // horizontal placement
     const leftPct = ((e.start - DAY_START) / DAY_SPAN) * 100;
     const widthPct = ((e.end - e.start) / DAY_SPAN) * 100;
     div.style.left = `${leftPct}%`;
     div.style.width = `${widthPct}%`;
 
-    // vertical placement
     const { top, height } = verticalBox(e);
     div.style.top = `${top}px`;
     div.style.height = `${height}px`;
@@ -350,12 +337,10 @@ function addSleepBlocks(row, day) {
     row.appendChild(div);
   }
 
-  // Morning sleep: from 05:00 to wake
   if (typeof day.wake === "number" && day.wake > DAY_START) {
     addBlock(DAY_START, day.wake);
   }
 
-  // Evening sleep: from sleep time to end of page (05:00 next day)
   if (typeof day.sleep === "number" && day.sleep < spanEnd) {
     addBlock(day.sleep, spanEnd);
   }
