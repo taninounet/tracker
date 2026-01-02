@@ -1,32 +1,29 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap");
+/* ───────── fonts ───────── */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+
+/* ───────── theme ───────── */
+:root{
+  --bg: #ffffff;
+  --text: #111827;
+
+  /* grid lines */
+  --grid-major: #e6e8eb;
+  --grid-minor: #f1f3f5;
+
+  /* pastel event colors */
+  --work: #fde7b5;
+  --food: #cfead6;
+  --run:  #cfe1ff;
+
+  /* sleep background (same “hour mark” tone, NOT transparent) */
+  --sleep: var(--grid-major);
+}
 
 /* ───────── base ───────── */
 
-:root{
-  --bg: #ffffff;
-  --text: rgba(0,0,0,0.86);
-  --muted: rgba(0,0,0,0.55);
-
-  /* same visual language as hour lines */
-  --grid-line: rgba(0,0,0,0.06);
-  --grid-line-soft: rgba(0,0,0,0.025);
-
-  /* pastel palette */
-  --work:  #F7E6A6;
-  --food:  #CFEACB;
-  --run:   #CFE3FF;
-  --marker:#E9E9EE;
-
-  /* sleep block: match hour marks vibe */
-  --sleep: rgba(0,0,0,0.06);
-
-  --radius: 10px;
-  --shadow: 0 6px 18px rgba(0,0,0,0.08);
-}
-
 body {
   margin: 0;
-  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "SF Pro Display", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -42,7 +39,6 @@ body {
   height: 40px;
   background: var(--bg);
   width: 100vw;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
 .hour {
@@ -50,8 +46,8 @@ body {
   text-align: center;
   font-size: 12px;
   line-height: 40px;
-  color: var(--muted);
-  font-weight: 600;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 /* hour line */
@@ -62,7 +58,7 @@ body {
   left: 50%;
   width: 1px;
   height: 300vh;
-  background: var(--grid-line);
+  background: var(--grid-major);
 }
 
 /* half hour line */
@@ -74,7 +70,7 @@ body {
   transform: translateX(-50%);
   width: 1px;
   height: 300vh;
-  background: var(--grid-line-soft);
+  background: var(--grid-minor);
 }
 
 /* ───────── timeline ───────── */
@@ -94,46 +90,41 @@ body {
 
 .day-label {
   position: absolute;
-  left: 8px;
+  left: 6px;
   top: 6px;
   font-size: 12px;
   font-weight: 600;
   z-index: 5;
-  color: var(--muted);
+  color: #111827;
 }
 
-/* ───────── sleep block (behind events) ───────── */
+/* ───────── sleep background blocks ───────── */
 
-.sleep-block {
+.sleep-bg{
   position: absolute;
-  border-radius: var(--radius);
+  top: 0;
+  bottom: 0;
   background: var(--sleep);
   z-index: 1;
+  border-radius: 10px;
 }
 
 /* ───────── events ───────── */
 
 .event {
   position: absolute;
-  border-radius: var(--radius);
-  padding: 4px 8px; /* text padding (not the vertical geometry padding you described) */
+  border-radius: 10px;
+  padding: 3px 8px;
   font-size: 11px;
   box-sizing: border-box;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: var(--shadow);
   z-index: 2;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
 }
 
-.event.work   { background: var(--work); }
-.event.food   { background: var(--food); }
-.event.run    { background: var(--run); }
-
-.event.marker {
-  background: var(--marker);
-  color: rgba(0,0,0,0.55);
-  font-weight: 600;
-  box-shadow: none;
-  border: 1px solid rgba(0,0,0,0.06);
-}
+/* pastel colors */
+.event.work  { background: var(--work); }
+.event.food  { background: var(--food); }
+.event.run   { background: var(--run); }
