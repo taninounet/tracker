@@ -5,13 +5,13 @@
 :root{
   --bg: #ffffff;
 
-  /* original pastel base tones */
-  --work:  #fde7b5;
-  --food:  #cfead6;
-  --run:   #cfe1ff;
+  /* darker, richer pastels */
+  --work:  #f3d98c;
+  --food:  #bfe2c9;
+  --run:   #b9cffc;
 
-  /* sleep background (flat, calm) */
-  --sleep: #e6e8eb;
+  /* sleep slab */
+  --sleep: #e3e5e8;
 }
 
 /* ───────── base ───────── */
@@ -22,7 +22,7 @@ body {
   background: var(--bg);
 }
 
-/* ───────── hour header (TEXT ONLY, NO LINES) ───────── */
+/* ───────── hour header (text only) ───────── */
 
 #hour-header {
   position: sticky;
@@ -42,7 +42,7 @@ body {
   font-weight: 500;
 }
 
-/* 🚫 REMOVE ALL GRID LINES COMPLETELY */
+/* remove all grid lines */
 .hour::before,
 .hour::after {
   display: none !important;
@@ -62,32 +62,39 @@ body {
 .day-row {
   position: relative;
   background: var(--bg);
+  overflow: hidden; /* 👈 critical for clean edges */
 }
 
-/* date label stays above everything */
+/* date label always above */
 .day-label {
   position: absolute;
-  left: 6px;
-  top: 6px;
+  left: 10px;
+  top: 8px;
   font-size: 12px;
   font-weight: 600;
   z-index: 6;
   color: #111827;
 }
 
-/* ───────── sleep background ───────── */
-/* flat, no transparency, no grid bleed */
+/* ───────── sleep background — CONTINUOUS SLAB ───────── */
 
 .sleep-bg{
   position: absolute;
   top: 0;
   bottom: 0;
+
+  /* 👇 extend fully to page edge */
+  left: 0 !important;
+
   background: var(--sleep);
   z-index: 2;
-  border-radius: 10px;
+
+  /* rounded ONLY on wake-facing edge */
+  border-top-right-radius: 18px;
+  border-bottom-right-radius: 18px;
 }
 
-/* ───────── events — LIQUID GLASS ───────── */
+/* ───────── events — darker liquid glass ───────── */
 
 .event {
   position: absolute;
@@ -101,28 +108,26 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 
-  /* glassmorphism */
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(145%);
+  -webkit-backdrop-filter: blur(10px) saturate(145%);
 
-  /* depth + polish */
   box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    0 6px 18px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.35);
 
   z-index: 5;
 }
 
-/* ───────── glass-tinted pastel colors ───────── */
+/* ───────── darker glass tints ───────── */
 
 .event.work {
   background:
     linear-gradient(
       to bottom right,
-      rgba(253, 231, 181, 0.75),
-      rgba(253, 231, 181, 0.45)
+      rgba(243, 217, 140, 0.85),
+      rgba(243, 217, 140, 0.55)
     );
 }
 
@@ -130,8 +135,8 @@ body {
   background:
     linear-gradient(
       to bottom right,
-      rgba(207, 234, 214, 0.75),
-      rgba(207, 234, 214, 0.45)
+      rgba(191, 226, 201, 0.85),
+      rgba(191, 226, 201, 0.55)
     );
 }
 
@@ -139,7 +144,7 @@ body {
   background:
     linear-gradient(
       to bottom right,
-      rgba(207, 225, 255, 0.75),
-      rgba(207, 225, 255, 0.45)
+      rgba(185, 207, 252, 0.85),
+      rgba(185, 207, 252, 0.55)
     );
 }
