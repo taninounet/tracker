@@ -1,9 +1,10 @@
-
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
   background: #ffffff;
 }
+
+/* ───── hour header ───── */
 
 #hour-header {
   position: sticky;
@@ -12,7 +13,7 @@ body {
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   height: 40px;
-  background: #ffffff;
+  background: #fff;
 }
 
 .hour {
@@ -30,8 +31,8 @@ body {
   top: 40px;
   left: 50%;
   width: 1px;
-  height: 100vh;
-  background: rgba(0,0,0,0.08);
+  height: 200vh;
+  background: rgba(0,0,0,0.07);
 }
 
 /* half-hour line (exact middle) */
@@ -42,9 +43,11 @@ body {
   left: 100%;
   transform: translateX(-50%);
   width: 1px;
-  height: 100vh;
-  background: rgba(0,0,0,0.03);
+  height: 200vh;
+  background: rgba(0,0,0,0.025);
 }
+
+/* ───── timeline ───── */
 
 #timeline {
   display: flex;
@@ -54,7 +57,7 @@ body {
 .day-row {
   position: relative;
   height: 100px;
-  background: #ffffff;
+  background: #fff;
 }
 
 .day-label {
@@ -63,8 +66,10 @@ body {
   top: 6px;
   font-size: 12px;
   font-weight: 600;
-  z-index: 3;
+  z-index: 5;
 }
+
+/* ───── events ───── */
 
 .event {
   position: absolute;
@@ -72,11 +77,14 @@ body {
   padding: 3px 6px;
   font-size: 11px;
   box-sizing: border-box;
-  z-index: 2;
+  z-index: 3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* activity colors (temporary) */
-.event.run   { background: #90caf9; }
-.event.food  { background: #a5d6a7; }
+/* temporary colors */
 .event.work  { background: #ffe082; }
+.event.food  { background: #a5d6a7; }
+.event.run   { background: #90caf9; }
 .event.sleep { background: #ce93d8; }
