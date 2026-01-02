@@ -11,6 +11,27 @@ const DAY_HEIGHT = 100;     // px height of each day row
 const PAD_FRAC = 0.03;      // 3% top + 3% bottom
 const GAP_FRAC = 0.06;      // 6% between stacked events (and therefore also 2*PAD)
 
+/* ───── TAG CATEGORIES (minimal addition) ───── */
+
+const TAGS = {
+  eth:   { className: "tag-eth",   icon: "https://upload.wikimedia.org/wikipedia/commons/e/ea/ETH_Z%C3%BCrich_Logo.svg" },
+  run:   { className: "tag-run",   icon: "https://imgnike-a.akamaihd.net/branding/cdp-pegasus-41/assets/img/logo_big.jpg" },
+  leet:  { className: "tag-leet",  icon: "https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png" },
+  quant: { className: "tag-quant", icon: "https://dbpxikdadyyelyemwaef.supabase.co/storage/v1/object/public/logos//optiverLogo.svg" },
+  duo:   { className: "tag-duo",   icon: "https://companieslogo.com/img/orig/DUOL-5baebe62.png?t=1720244491" },
+  coop:  { className: "tag-coop",  icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Coop.svg/2560px-Coop.svg.png" },
+  sbb:   { className: "tag-sbb",   icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/EasyJet_logo.svg/2560px-EasyJet_logo.svg.png" }
+};
+
+function extractTag(label) {
+  const m = label.match(/#([a-z0-9]+)/i);
+  if (!m) return { tag: null, clean: label };
+
+  const key = m[1].toLowerCase();
+  const clean = label.replace(m[0], "").replace(/\s+/g, " ").trim();
+  return { tag: TAGS[key] ? key : null, clean: clean || label };
+}
+
 /* ───── DOM ───── */
 
 const timeline = document.getElementById("timeline");
@@ -240,9 +261,33 @@ function renderDay(day) {
   }
 
   day.events.forEach(e => {
+    const { tag, clean } = extractTag(e.label);
+
     const div = document.createElement("div");
-    div.className = `event ${classify(e.label)}`;
-    div.textContent = e.label;
+
+    // ✅ minimal: tagged events get tag class, otherwise keep your existing classifier
+    if (tag) {
+      div.className = `event ${TAGS[tag].className}`;
+    } else {
+      div.className = `event ${classify(clean)}`;
+    }
+
+    // ✅ minimal: icon before text (same height as text)
+    if (tag) {
+      const img = document.createElement("img");
+      img.className = "event-icon";
+      img.src = TAGS[tag].icon;
+      img.alt = tag;
+      img.decoding = "async";
+      img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      div.appendChild(img);
+    }
+
+    const span = document.createElement("span");
+    span.className = "event-text";
+    span.textContent = clean;
+    div.appendChild(span);
 
     // horizontal placement
     const leftPct = ((e.start - DAY_START) / DAY_SPAN) * 100;
