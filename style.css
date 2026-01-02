@@ -1,17 +1,28 @@
-
 /* ───────── fonts ───────── */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 
 /* ───────── theme ───────── */
-:root{
+:root {
   --bg: #ffffff;
+
+  /* default / fallback */
+  --event-default: #e5e7eb;
+
+  /* category colors */
+  --eth:   #215caf;
+  --run:   #6bcf2f;
+  --leet:  #111111;
+  --quant: #0077c8;
+  --duo:   #58cc02;
+  --coop:  #f57c00;
+  --sbb:   #ffffff;
 }
 
 /* ───────── base ───────── */
 
 body {
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
   background: var(--bg);
 }
 
@@ -33,11 +44,6 @@ body {
   line-height: 40px;
   color: #6b7280;
   font-weight: 500;
-}
-
-.hour::before,
-.hour::after {
-  display: none !important;
 }
 
 /* ───────── timeline ───────── */
@@ -65,7 +71,7 @@ body {
   color: #111827;
 }
 
-/* ───────── sleep background — dotted pattern ───────── */
+/* ───────── sleep dotted pattern ───────── */
 
 .sleep-bg {
   position: absolute;
@@ -73,26 +79,24 @@ body {
   bottom: 0;
   z-index: 2;
   border-radius: 10px;
+
   background-color: transparent;
   background-image: radial-gradient(
-    rgba(0, 0, 0, 0.10) 1px,
+    rgba(0, 0, 0, 0.08) 1px,
     transparent 1px
   );
   background-size: 14px 14px;
 }
 
-/* ───────── events — base ───────── */
+/* ───────── events ───────── */
 
 .event {
   position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
   border-radius: 14px;
-  padding: 6px 10px;
+  padding: 6px 10px 6px 28px;
   font-size: 11px;
   font-weight: 500;
+  box-sizing: border-box;
 
   white-space: nowrap;
   overflow: hidden;
@@ -102,85 +106,79 @@ body {
   -webkit-backdrop-filter: blur(10px) saturate(140%);
 
   box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    0 6px 16px rgba(0,0,0,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.55);
 
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255,255,255,0.45);
   z-index: 5;
+
+  background: var(--event-default);
 }
 
-/* icon */
-.event .icon {
+/* ───────── icon inside event ───────── */
+
+.event::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
   width: 14px;
   height: 14px;
-  flex-shrink: 0;
-  object-fit: contain;
+  transform: translateY(-50%);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.95;
 }
 
-/* ───────── default (no tag) ───────── */
-
-.event.default {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(220, 220, 220, 0.75),
-      rgba(220, 220, 220, 0.45)
-    );
-}
-
-/* ───────── categories ───────── */
+/* ───────── category styles ───────── */
 
 .event.eth {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(0, 90, 170, 0.80),
-      rgba(0, 90, 170, 0.50)
-    );
+  background: color-mix(in srgb, var(--eth) 25%, white);
+}
+.event.eth::before {
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/e/ea/ETH_Zürich_Logo.svg");
 }
 
 .event.run {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(0, 0, 0, 0.55),
-      rgba(0, 0, 0, 0.35)
-    );
+  background: color-mix(in srgb, var(--run) 25%, white);
+}
+.event.run::before {
+  background-image: url("https://imgnike-a.akamaihd.net/branding/cdp-pegasus-41/assets/img/logo_big.jpg");
 }
 
 .event.leet {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(255, 161, 22, 0.80),
-      rgba(255, 161, 22, 0.50)
-    );
+  background: color-mix(in srgb, var(--leet) 20%, white);
+}
+.event.leet::before {
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png");
 }
 
 .event.quant {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(0, 56, 101, 0.80),
-      rgba(0, 56, 101, 0.50)
-    );
+  background: color-mix(in srgb, var(--quant) 25%, white);
+}
+.event.quant::before {
+  background-image: url("https://dbpxikdadyyelyemwaef.supabase.co/storage/v1/object/public/logos//optiverLogo.svg");
 }
 
 .event.duo {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(88, 204, 2, 0.80),
-      rgba(88, 204, 2, 0.50)
-    );
+  background: color-mix(in srgb, var(--duo) 25%, white);
+}
+.event.duo::before {
+  background-image: url("https://companieslogo.com/img/orig/DUOL-5baebe62.png?t=1720244491");
+}
+
+.event.coop {
+  background: color-mix(in srgb, var(--coop) 25%, white);
+}
+.event.coop::before {
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Coop.svg/2560px-Coop.svg.png");
 }
 
 .event.sbb {
-  background:
-    linear-gradient(
-      to bottom right,
-      rgba(255, 255, 255, 0.85),
-      rgba(255, 255, 255, 0.65)
-    );
-  color: #111;
+  background: #e11d2a;
+  color: white;
+}
+.event.sbb::before {
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/SBB_logo_simplified.svg/1200px-SBB_logo_simplified.svg.png");
 }
