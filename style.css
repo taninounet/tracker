@@ -9,12 +9,12 @@
   --grid-major: #e6e8eb;
   --grid-minor: #f1f3f5;
 
-  /* pastel event colors */
+  /* ORIGINAL pastel event colors */
   --work:  #fde7b5;
   --food:  #cfead6;
   --run:   #cfe1ff;
 
-  /* sleep background */
+  /* sleep background — SAME as hour major line, NOT transparent */
   --sleep: var(--grid-major);
 }
 
@@ -31,7 +31,7 @@ body {
 #hour-header {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 10;
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   height: 40px;
@@ -87,7 +87,6 @@ body {
   background: var(--bg);
 }
 
-/* DATE LABEL — TOPMOST LAYER */
 .day-label {
   position: absolute;
   left: 6px;
@@ -96,25 +95,26 @@ body {
   font-weight: 600;
   color: #111827;
 
-  z-index: 40;
+  z-index: 40; /* TOP OF THE STACK */
   pointer-events: none;
 }
 
-/* ───────── sleep background ───────── */
-/* ABOVE grid lines, BELOW events */
 
-.sleep-bg{
+/* ───────── sleep background ───────── */
+/* MUST sit ABOVE grid lines but BELOW events */
+
+.sleep-bg {
   position: absolute;
   top: 0;
   bottom: 0;
   background: var(--sleep);
   border-radius: 10px;
 
-  z-index: 10;
+  z-index: 10; /* ABOVE grid lines, BELOW events */
 }
+day
 
-/* ───────── events ───────── */
-/* SAME size & layout — visual polish only */
+/* ───────── events (RESTORED LOOK) ───────── */
 
 .event {
   position: absolute;
@@ -126,15 +126,17 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 
-  /* transparency + subtle elevation */
+  /* visual softness */
   opacity: 0.92;
   box-shadow:
     0 1px 2px rgba(0,0,0,0.08),
     0 6px 14px rgba(0,0,0,0.06);
 
-  z-index: 30;
+  z-index: 30; /* ABOVE sleep + grid */
 }
 
-.event.work { background: var(--work); }
-.event.food { background: var(--food); }
-.event.run  { background: var(--run); }
+
+/* restored pastel colors */
+.event.work  { background: var(--work); }
+.event.food  { background: var(--food); }
+.event.run   { background: var(--run); }
