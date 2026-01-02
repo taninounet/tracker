@@ -1,18 +1,17 @@
 /* ───────── fonts ───────── */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 
-
 /* ───────── theme ───────── */
 :root{
   --bg: #ffffff;
 
-  /* darker pastel bases */
-  --work:  #f3d98c;
-  --food:  #bfe2c9;
-  --run:   #b9cffc;
+  /* original pastel base tones */
+  --work:  #fde7b5;
+  --food:  #cfead6;
+  --run:   #cfe1ff;
 
-  /* sleep slab */
-  --sleep: #e3e5e8;
+  /* sleep background (flat, calm) */
+  --sleep: #e6e8eb;
 }
 
 /* ───────── base ───────── */
@@ -23,7 +22,7 @@ body {
   background: var(--bg);
 }
 
-/* ───────── hour header (TEXT ONLY) ───────── */
+/* ───────── hour header (TEXT ONLY, NO LINES) ───────── */
 
 #hour-header {
   position: sticky;
@@ -43,7 +42,7 @@ body {
   font-weight: 500;
 }
 
-/* REMOVE ALL GRID LINES */
+/* 🚫 REMOVE ALL GRID LINES COMPLETELY */
 .hour::before,
 .hour::after {
   display: none !important;
@@ -65,10 +64,11 @@ body {
   background: var(--bg);
 }
 
+/* date label stays above everything */
 .day-label {
   position: absolute;
-  left: 10px;
-  top: 8px;
+  left: 6px;
+  top: 6px;
   font-size: 12px;
   font-weight: 600;
   z-index: 6;
@@ -76,21 +76,18 @@ body {
 }
 
 /* ───────── sleep background ───────── */
+/* flat, no transparency, no grid bleed */
 
-.sleep-bg {
+.sleep-bg{
   position: absolute;
   top: 0;
   bottom: 0;
   background: var(--sleep);
   z-index: 2;
-  border-radius: 0;
+  border-radius: 10px;
 }
 
-/* rounded ONLY at continuity boundary */
-.sleep-bg.round-left  { border-radius: 18px 0 0 18px; }
-.sleep-bg.round-right { border-radius: 0 18px 18px 0; }
-
-/* ───────── events — LIQUID GLASS (GOOD VERSION) ───────── */
+/* ───────── events — LIQUID GLASS ───────── */
 
 .event {
   position: absolute;
@@ -99,29 +96,33 @@ body {
   font-size: 11px;
   font-weight: 500;
   box-sizing: border-box;
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 
+  /* glassmorphism */
   backdrop-filter: blur(10px) saturate(140%);
   -webkit-backdrop-filter: blur(10px) saturate(140%);
 
+  /* depth + polish */
   box-shadow:
-    0 4px 10px rgba(0,0,0,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.5);
+    0 6px 16px rgba(0, 0, 0, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 
-  border: 1px solid rgba(255,255,255,0.4);
-  z-index: 6;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+
+  z-index: 5;
 }
 
-/* glass-tinted darker pastels */
+/* ───────── glass-tinted pastel colors ───────── */
 
 .event.work {
   background:
     linear-gradient(
       to bottom right,
-      rgba(243, 217, 140, 0.85),
-      rgba(243, 217, 140, 0.55)
+      rgba(253, 231, 181, 0.75),
+      rgba(253, 231, 181, 0.45)
     );
 }
 
@@ -129,8 +130,8 @@ body {
   background:
     linear-gradient(
       to bottom right,
-      rgba(191, 226, 201, 0.85),
-      rgba(191, 226, 201, 0.55)
+      rgba(207, 234, 214, 0.75),
+      rgba(207, 234, 214, 0.45)
     );
 }
 
@@ -138,7 +139,7 @@ body {
   background:
     linear-gradient(
       to bottom right,
-      rgba(185, 207, 252, 0.85),
-      rgba(185, 207, 252, 0.55)
+      rgba(207, 225, 255, 0.75),
+      rgba(207, 225, 255, 0.45)
     );
 }
