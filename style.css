@@ -80,6 +80,8 @@ body {
 
 /* ───────── sleep background — diagonal wave pattern ───────── */
 
+/* ───────── sleep background — subtle wave lines only ───────── */
+
 .sleep-bg {
   position: absolute;
   top: 0;
@@ -87,32 +89,22 @@ body {
   z-index: 2;
   border-radius: 10px;
 
-  /* base light gray */
-  background-color: #f0f2f4;
+  /* NO base fill — keep page white */
+  background-color: transparent;
 
-  /* diagonal wave pattern */
+  /* soft wave-like diagonal lines */
   background-image:
     repeating-linear-gradient(
       135deg,
-      rgba(0, 0, 0, 0.06) 0px,
-      rgba(0, 0, 0, 0.06) 6px,
-      rgba(0, 0, 0, 0.00) 6px,
-      rgba(0, 0, 0, 0.00) 14px
-    ),
-    repeating-radial-gradient(
-      circle at 0 0,
-      rgba(0, 0, 0, 0.035) 0px,
-      rgba(0, 0, 0, 0.035) 2px,
+      rgba(0, 0, 0, 0.08) 0px,
+      rgba(0, 0, 0, 0.08) 2px,
       transparent 2px,
-      transparent 8px
+      transparent 14px
     );
 
-  background-size:
-    20px 20px,
-    40px 40px;
-
-  background-blend-mode: multiply;
+  background-size: 32px 32px;
 }
+
 
 
 /* ───────── events — LIQUID GLASS ───────── */
