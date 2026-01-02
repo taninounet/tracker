@@ -5,17 +5,13 @@
 :root{
   --bg: #ffffff;
 
-  /* darker (but still soft) event palette */
-  --work-glass: rgba(232, 195, 70, 0.55);
-  --food-glass: rgba(120, 205, 155, 0.48);
-  --run-glass:  rgba(120, 165, 255, 0.48);
+  /* darker pastel bases */
+  --work:  #f3d98c;
+  --food:  #bfe2c9;
+  --run:   #b9cffc;
 
-  /* sleep */
-  --sleep: rgba(0,0,0,0.085);
-
-  /* glass border/highlight */
-  --glass-border: rgba(255,255,255,0.55);
-  --glass-sheen: rgba(255,255,255,0.35);
+  /* sleep slab */
+  --sleep: #e3e5e8;
 }
 
 /* ───────── base ───────── */
@@ -26,7 +22,7 @@ body {
   background: var(--bg);
 }
 
-/* ───────── hour header ───────── */
+/* ───────── hour header (TEXT ONLY) ───────── */
 
 #hour-header {
   position: sticky;
@@ -36,21 +32,20 @@ body {
   grid-template-columns: repeat(24, 1fr);
   height: 40px;
   background: var(--bg);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
 .hour {
-  position: relative;
   text-align: center;
   font-size: 12px;
   line-height: 40px;
-  color: rgba(17, 24, 39, 0.55);
-  font-weight: 600;
+  color: #6b7280;
+  font-weight: 500;
 }
 
-/* ✅ REMOVE ALL grid lines (hour + half-hour) */
-.hour::after,
-.hour::before {
+/* REMOVE ALL GRID LINES */
+.hour::before,
+.hour::after {
+  display: none !important;
   content: none !important;
 }
 
@@ -74,37 +69,27 @@ body {
   left: 10px;
   top: 8px;
   font-size: 12px;
-  font-weight: 700;
-  z-index: 8;
+  font-weight: 600;
+  z-index: 6;
   color: #111827;
 }
 
-/* ───────── sleep background ─────────
-   Goal:
-   - fill to page edges cleanly (no white “pigments”)
-   - rounded ONLY at the sleep↔wake boundary
-*/
+/* ───────── sleep background ───────── */
 
-.sleep-bg{
+.sleep-bg {
   position: absolute;
   top: 0;
   bottom: 0;
   background: var(--sleep);
   z-index: 2;
-  border-radius: 0; /* default: square */
+  border-radius: 0;
 }
 
-/* morning block: flush left edge, rounded on RIGHT only */
-.sleep-bg.round-right{
-  border-radius: 0 18px 18px 0;
-}
+/* rounded ONLY at continuity boundary */
+.sleep-bg.round-left  { border-radius: 18px 0 0 18px; }
+.sleep-bg.round-right { border-radius: 0 18px 18px 0; }
 
-/* evening block: flush right edge, rounded on LEFT only */
-.sleep-bg.round-left{
-  border-radius: 18px 0 0 18px;
-}
-
-/* ───────── events (LIQUID GLASS, no big shadow) ───────── */
+/* ───────── events — LIQUID GLASS (GOOD VERSION) ───────── */
 
 .event {
   position: absolute;
@@ -128,8 +113,31 @@ body {
   z-index: 6;
 }
 
+/* glass-tinted darker pastels */
 
-/* liquid-glass fills per type */
-.event.work  { background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.10)), var(--work-glass); }
-.event.food  { background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.10)), var(--food-glass); }
-.event.run   { background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.10)), var(--run-glass); }
+.event.work {
+  background:
+    linear-gradient(
+      to bottom right,
+      rgba(243, 217, 140, 0.85),
+      rgba(243, 217, 140, 0.55)
+    );
+}
+
+.event.food {
+  background:
+    linear-gradient(
+      to bottom right,
+      rgba(191, 226, 201, 0.85),
+      rgba(191, 226, 201, 0.55)
+    );
+}
+
+.event.run {
+  background:
+    linear-gradient(
+      to bottom right,
+      rgba(185, 207, 252, 0.85),
+      rgba(185, 207, 252, 0.55)
+    );
+}
