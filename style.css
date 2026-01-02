@@ -9,13 +9,13 @@
   --grid-major: #e6e8eb;
   --grid-minor: #f1f3f5;
 
-  /* pastel event colors */
+  /* pastel tints */
   --work:  #fde7b5;
   --food:  #cfead6;
   --run:   #cfe1ff;
 
-  /* sleep background */
-  --sleep: var(--grid-major);
+  /* sleep */
+  --sleep: #e6e8eb;
 }
 
 /* ───────── base ───────── */
@@ -47,29 +47,27 @@ body {
   font-weight: 500;
 }
 
-/* hour line */
-.hour::after {
-  content: "";
-  position: absolute;
-  top: 40px;
-  left: 50%;
-  width: 1px;
-  height: 300vh;
-  background: var(--grid-major);
-  z-index: 1;
-}
-
-/* half-hour line */
+/* grid lines — FORCE bottom layer */
+.hour::after,
 .hour::before {
   content: "";
   position: absolute;
   top: 40px;
-  left: 100%;
-  transform: translateX(-50%);
   width: 1px;
   height: 300vh;
+  pointer-events: none;
+  z-index: 0; /* ⬅️ absolute bottom */
+}
+
+.hour::after {
+  left: 50%;
+  background: var(--grid-major);
+}
+
+.hour::before {
+  left: 100%;
+  transform: translateX(-50%);
   background: var(--grid-minor);
-  z-index: 1;
 }
 
 /* ───────── timeline ───────── */
@@ -87,54 +85,74 @@ body {
   background: var(--bg);
 }
 
-/* DATE LABEL — ABOVE EVERYTHING */
+/* DATE LABEL — always top, always readable */
 .day-label {
   position: absolute;
-  left: 6px;
+  left: 8px;
   top: 6px;
+
   font-size: 12px;
   font-weight: 600;
   color: #111827;
-  z-index: 10; /* 👈 highest layer */
+
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  padding: 2px 6px;
+  border-radius: 8px;
+
+  z-index: 6;
 }
 
 /* ───────── sleep background ───────── */
-/* Above grid lines, below events */
+/* solid mask ABOVE grid, BELOW events */
 
-.sleep-bg{
+.sleep-bg {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--sleep);
-  z-index: 3;           /* 👈 hides hour lines */
-  border-radius: 10px;
+
+  background: var(--sleep);   /* ⬅️ solid paint, no alpha */
+  border-radius: 14px;
+
+  z-index: 2;
 }
 
-/* ───────── events (glass look) ───────── */
+/* ───────── events — TRUE liquid glass ───────── */
 
 .event {
   position: absolute;
-  border-radius: 10px;
-  padding: 4px 8px;
+  border-radius: 14px;
+  padding: 6px 10px;
   font-size: 11px;
   box-sizing: border-box;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 
-  /* glass effect */
-  opacity: 0.85;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  /* hard base so grid NEVER bleeds */
+  background-color: rgba(255,255,255,0.78);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
 
   box-shadow:
     0 1px 2px rgba(0,0,0,0.08),
-    0 8px 20px rgba(0,0,0,0.06);
+    0 12px 30px rgba(0,0,0,0.10);
 
-  z-index: 5;          /* 👈 above sleep */
+  z-index: 4;
 }
 
-/* pastel colors */
-.event.work  { background: var(--work); }
-.event.food  { background: var(--food); }
-.event.run   { background: var(--run); }
+/* color tint layer (NOT transparency) */
+.event::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.45;
+  z-index: -1;
+}
+
+.event.work::before { background: var(--work); }
+.event.food::before { background: var(--food); }
+.event.run::before  { background: var(--run); }
