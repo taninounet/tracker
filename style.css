@@ -6,8 +6,8 @@
   --bg: #ffffff;
 
   /* grid lines */
-  --grid-major: rgba(0,0,0,0.08);
-  --grid-minor: rgba(0,0,0,0.035);
+  --grid-major: #e6e8eb;
+  --grid-minor: #f1f3f5;
 
   /* pastel event colors */
   --work:  #fde7b5;
@@ -15,7 +15,7 @@
   --run:   #cfe1ff;
 
   /* sleep background */
-  --sleep: rgba(0,0,0,0.06);
+  --sleep: var(--grid-major);
 }
 
 /* ───────── base ───────── */
@@ -31,7 +31,7 @@ body {
 #hour-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   height: 40px;
@@ -47,7 +47,7 @@ body {
   font-weight: 500;
 }
 
-/* hour grid line */
+/* hour line */
 .hour::after {
   content: "";
   position: absolute;
@@ -59,7 +59,7 @@ body {
   z-index: 1;
 }
 
-/* half-hour grid line */
+/* half-hour line */
 .hour::before {
   content: "";
   position: absolute;
@@ -95,9 +95,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   color: #111827;
-
-  z-index: 6; /* 👈 ABOVE sleep AND events */
-  pointer-events: none;
+  z-index: 10; /* 👈 highest layer */
 }
 
 /* ───────── sleep background ───────── */
@@ -108,11 +106,11 @@ body {
   top: 0;
   bottom: 0;
   background: var(--sleep);
-  z-index: 3;          /* 👈 blocks grid lines */
+  z-index: 3;           /* 👈 hides hour lines */
   border-radius: 10px;
 }
 
-/* ───────── events ───────── */
+/* ───────── events (glass look) ───────── */
 
 .event {
   position: absolute;
@@ -124,18 +122,19 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 
-  /* transparency */
-  opacity: 0.88;
+  /* glass effect */
+  opacity: 0.85;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 
-  /* subtle modern shadow */
   box-shadow:
-    0 1px 2px rgba(0,0,0,0.10),
-    0 6px 14px rgba(0,0,0,0.08);
+    0 1px 2px rgba(0,0,0,0.08),
+    0 8px 20px rgba(0,0,0,0.06);
 
   z-index: 5;          /* 👈 above sleep */
 }
 
-/* event colors */
+/* pastel colors */
 .event.work  { background: var(--work); }
 .event.food  { background: var(--food); }
 .event.run   { background: var(--run); }
