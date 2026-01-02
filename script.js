@@ -56,7 +56,7 @@ const CATEGORY_MAP = {
   aldi: {
     tags: ["#aldi"],
     /* UPDATED */
-    logo: "https://logos-world.net/wp-content/uploads/2022/01/Aldi-Logo.png"
+    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Aldi_Süd_2017_logo.svg/1696px-Aldi_Süd_2017_logo.svg.png"
   },
   easy: {
     tags: ["#easy"],
