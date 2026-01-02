@@ -93,26 +93,21 @@ body {
   top: 6px;
   font-size: 12px;
   font-weight: 600;
+  z-index: 5;
   color: #111827;
-
-  z-index: 40; /* TOP OF THE STACK */
-  pointer-events: none;
 }
-
 
 /* ───────── sleep background ───────── */
 /* MUST sit ABOVE grid lines but BELOW events */
 
-.sleep-bg {
+.sleep-bg{
   position: absolute;
   top: 0;
   bottom: 0;
   background: var(--sleep);
+  z-index: 3;              /* 👈 key fix */
   border-radius: 10px;
-
-  z-index: 10; /* ABOVE grid lines, BELOW events */
 }
-day
 
 /* ───────── events (RESTORED LOOK) ───────── */
 
@@ -126,15 +121,14 @@ day
   overflow: hidden;
   text-overflow: ellipsis;
 
-  /* visual softness */
-  opacity: 0.92;
+  /* restored softness */
+  opacity: 0.95;
   box-shadow:
     0 1px 2px rgba(0,0,0,0.08),
     0 6px 14px rgba(0,0,0,0.06);
 
-  z-index: 30; /* ABOVE sleep + grid */
+  z-index: 5;              /* 👈 always above sleep */
 }
-
 
 /* restored pastel colors */
 .event.work  { background: var(--work); }
