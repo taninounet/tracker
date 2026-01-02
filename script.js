@@ -4,11 +4,19 @@ const DOC_URL =
   "https://docs.google.com/document/d/1WTC4OuGIHjd7BJMvV9gNSNjptupzSFCtRmtXEeY1Fbg/export?format=txt";
 
 const DAY_START = 5 * 60;   // 05:00
-const DAY_SPAN = 1440;
-const DAY_HEIGHT = 100;
+const DAY_SPAN = 1440;      // 24h window from 05:00 → 05:00
+const DAY_HEIGHT = 100;     // N
 
-const TOTAL_BANDS = 3;
-const GAP = 6;
+// E = 3% of N, and 2E is the universal gap
+const PAD_PCT = 0.03;
+const PAD = Math.round(DAY_HEIGHT * PAD_PCT);   // E
+const GAP = 2 * PAD;                             // 2E
+
+// Heights implied by your formulas
+const THIRD_H = (DAY_HEIGHT - 2 * PAD - 2 * GAP) / 3;  // ~27%
+const HALF_H  = (DAY_HEIGHT - 2 * PAD - GAP) / 2;      // ~44%
+const FULL_H  = (DAY_HEIGHT - 2 * PAD);                // ~94%
+const BIG_H   = (DAY_HEIGHT - 2 * PAD - GAP - THIRD_H); // ~61%
 
 /* ───── DOM ───── */
 
@@ -26,19 +34,25 @@ for (let i = 0; i < 24; i++) {
 
 /* ───── helpers ───── */
 
-const toMinutes = t =>
-  parseInt(t.slice(0, 2)) * 60 + parseInt(t.slice(2));
+const toMinutes = t => parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(2), 10);
 
+// timeline is 05:00 → next day 05:00, so times before 05:00 belong to "next day" (+1440)
 const normalize = m => (m < DAY_START ? m + 1440 : m);
 
+function overlaps(a, b) {
+  return a.start < b.end && a.end > b.start;
+}
+
 function classify(label) {
-  const l = label.toLowerCase();
-  if (l.includes("run") || l.includes("gym")) return "run";
+  const l = (label || "").toLowerCase();
+  if (!label) return "work";
+  if (l.includes("run") || l.includes("gym") || l.includes("workout")) return "run";
   if (l.includes("lunch") || l.includes("dinner") || l.includes("breakfast")) return "food";
+  if (l.endsWith(".")) return "marker";
   return "work";
 }
 
-/* ───── generate days ───── */
+/* ───── generate 2026 days ───── */
 
 const days = [];
 const dayMap = {};
@@ -50,12 +64,12 @@ for (
 ) {
   const iso = d.toISOString().slice(0, 10);
   const label = d.toLocaleDateString("en-GB");
-  const day = { iso, label, events: [], wake: null, sleep: null };
+  const day = { iso, label, events: [], _dots: [], wake: null, sleep: null, sleepBlock: null };
   days.push(day);
   dayMap[iso] = day;
 }
 
-/* ───── load doc ───── */
+/* ───── load Google Doc ───── */
 
 fetch(DOC_URL)
   .then(r => r.text())
@@ -64,96 +78,207 @@ fetch(DOC_URL)
     let currentDay = null;
 
     lines.forEach(line => {
+      // date line: 01/01/2026
       const dm = line.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (dm) {
-        currentDay = dayMap[`${dm[3]}-${dm[2]}-${dm[1]}`];
+        currentDay = dayMap[`${dm[3]}-${dm[2]}-${dm[1]}`] || null;
         return;
       }
-
       if (!currentDay) return;
 
-      // wake / sleep: XXXX.
-      const tm = line.match(/^(\d{4})\.$/);
-      if (tm) {
-        const t = normalize(toMinutes(tm[1]));
-        if (currentDay.wake === null) currentDay.wake = t;
-        else currentDay.sleep = t;
+      // dot-only marker: 0913.
+      const dotm = line.match(/^(\d{4})\.$/);
+      if (dotm) {
+        currentDay._dots.push(`${dotm[1]}.`);
         return;
       }
 
-      const em = line.match(/^(\d{4})-(\d{4})\s+(.*)$/);
+      // event line:
+      // 0945-1030 Breakfast & planning
+      // 2230 Reading
+      const em = line.match(/^(\d{4})(?:-(\d{4}))?(?:\s+(.*))?$/);
       if (!em) return;
 
-      currentDay.events.push({
-        start: normalize(toMinutes(em[1])),
-        end: normalize(toMinutes(em[2])),
-        label: em[3]
-      });
+      const start = normalize(toMinutes(em[1]));
+      const end = em[2] ? normalize(toMinutes(em[2])) : (start + 10);
+      const label = (em[3] || "").trim();
+
+      currentDay.events.push({ start, end, label, kind: "event" });
     });
 
-    days.forEach((d, i) => renderDay(d, days[i - 1]));
+    // post-process wake/sleep markers + sleep blocks
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i];
+
+      if (day._dots.length) {
+        // wake = first dot, sleep = last dot
+        const wakeLabel = day._dots[0];
+        const sleepLabel = day._dots[day._dots.length - 1];
+
+        day.wake = toMinutes(wakeLabel.slice(0, 4));
+        day.sleep = toMinutes(sleepLabel.slice(0, 4));
+
+        // show both markers as tiny events (as-written: "0913.")
+        day.events.push({
+          start: normalize(day.wake),
+          end: normalize(day.wake) + 10,
+          label: wakeLabel,
+          kind: "marker"
+        });
+
+        // sleep-time marker
+        day.events.push({
+          start: normalize(day.sleep),
+          end: normalize(day.sleep) + 10,
+          label: sleepLabel,
+          kind: "marker"
+        });
+      }
+
+      // sleep block: from previous day's sleep → today's wake (full height N, no vertical padding)
+      const prev = i > 0 ? days[i - 1] : null;
+      if (prev && prev.sleep != null && day.wake != null) {
+        let s = normalize(prev.sleep);
+        let e = normalize(day.wake);
+        if (e <= s) e += 1440;
+
+        day.sleepBlock = { start: s, end: e, kind: "sleepBlock" };
+      }
+    }
+
+    days.forEach(renderDay);
   });
 
-/* ───── layout engine ───── */
+/* ───── sizing + lanes ───── */
 
-function layoutEvents(events) {
-  events.forEach(e => {
-    e.overlap = events.filter(o =>
-      o !== e && e.start < o.end && e.end > o.start
-    ).length;
-    e.frac = e.overlap >= 2 ? 1/3 : e.overlap === 1 ? 1/2 : 1;
+function computeFixedSizes(events) {
+  // ignore sleep block (it renders behind everything)
+  const evs = events.filter(e => e.kind !== "sleepBlock");
+
+  // overlap counting
+  evs.forEach(e => {
+    let count = 0;
+    evs.forEach(o => {
+      if (e !== o && overlaps(e, o)) count++;
+    });
+    e.maxOverlap = count;
+    e.thirdFixed = (count >= 2); // ever overlaps with 2 others → always third
   });
 
-  events.sort((a, b) => a.start - b.start);
-  const active = [];
+  // promotion: overlaps any thirdFixed → always big (2/3-ish)
+  evs.forEach(e => {
+    e.bigFixed = !e.thirdFixed && evs.some(o => o.thirdFixed && overlaps(e, o));
+  });
 
-  events.forEach(e => {
-    active.filter(a => a.end > e.start);
-    let band = 0;
-    while (active.some(a => a.band === band)) band++;
-    e.band = band;
-    active.push(e);
+  // final size class
+  evs.forEach(e => {
+    if (e.thirdFixed) e.size = "third";
+    else if (e.bigFixed) e.size = "big";
+    else if (e.maxOverlap === 1) e.size = "half";
+    else e.size = "full";
+  });
+
+  return evs;
+}
+
+function assignLanes(evs) {
+  // lane end-times
+  const laneEnd = [ -Infinity, -Infinity, -Infinity ];
+
+  // sort by start (stable-ish)
+  evs.sort((a, b) => (a.start - b.start) || (a.end - b.end));
+
+  evs.forEach(e => {
+    // free lanes
+    for (let i = 0; i < 3; i++) {
+      if (laneEnd[i] <= e.start) laneEnd[i] = -Infinity;
+    }
+
+    const laneCount =
+      e.size === "third" ? 3 :
+      (e.size === "half" || e.size === "big") ? 2 :
+      1;
+
+    // choose first available lane among allowed set
+    let chosen = 0;
+    const maxLane = laneCount - 1;
+
+    // prefer keeping "third" events low, but otherwise just fill
+    for (let i = 0; i <= maxLane; i++) {
+      if (laneEnd[i] === -Infinity) { chosen = i; break; }
+    }
+
+    e.lane = chosen;
+    laneEnd[chosen] = e.end;
   });
 }
 
 /* ───── render ───── */
 
-function renderDay(day, prevDay) {
+function renderDay(day) {
   const row = document.createElement("div");
   row.className = "day-row";
+  row.style.height = `${DAY_HEIGHT}px`;
 
   const label = document.createElement("div");
   label.className = "day-label";
   label.textContent = day.label;
   row.appendChild(label);
 
-  /* sleep background */
-  if (prevDay && prevDay.sleep !== null && day.wake !== null) {
-    const bg = document.createElement("div");
-    bg.className = "sleep-bg";
-    bg.style.left = `${((prevDay.sleep - DAY_START) / DAY_SPAN) * 100}%`;
-    bg.style.width = `${((day.wake - prevDay.sleep) / DAY_SPAN) * 100}%`;
-    row.appendChild(bg);
+  // sleep block behind everything
+  if (day.sleepBlock) {
+    const s = document.createElement("div");
+    s.className = "sleep-block";
+
+    s.style.left = `${((day.sleepBlock.start - DAY_START) / DAY_SPAN) * 100}%`;
+    s.style.width = `${((day.sleepBlock.end - day.sleepBlock.start) / DAY_SPAN) * 100}%`;
+
+    s.style.top = `0px`;
+    s.style.height = `${DAY_HEIGHT}px`;
+
+    row.appendChild(s);
   }
 
-  layoutEvents(day.events);
+  const evs = computeFixedSizes(day.events);
+  assignLanes(evs);
 
-  const usable = DAY_HEIGHT - GAP * (TOTAL_BANDS - 1);
-  const bandH = usable / TOTAL_BANDS;
+  evs.forEach(e => {
+    const div = document.createElement("div");
 
-  day.events.forEach(e => {
-    const el = document.createElement("div");
-    el.className = `event ${classify(e.label)}`;
-    el.textContent = e.label;
+    const cls = classify(e.label);
+    div.className = `event ${cls}`;
 
-    el.style.left = `${((e.start - DAY_START) / DAY_SPAN) * 100}%`;
-    el.style.width = `${((e.end - e.start) / DAY_SPAN) * 100}%`;
+    // marker text exactly as written (e.g., "0913.")
+    div.textContent = e.label || "";
 
-    const bands = e.frac === 1 ? 3 : e.frac === 1/2 ? 2 : 1;
-    el.style.height = `${bands * bandH + (bands - 1) * GAP}px`;
-    el.style.top = `${e.band * (bandH + GAP)}px`;
+    // horizontal placement
+    div.style.left = `${((e.start - DAY_START) / DAY_SPAN) * 100}%`;
+    div.style.width = `${((e.end - e.start) / DAY_SPAN) * 100}%`;
 
-    row.appendChild(el);
+    // vertical placement using your exact padding model
+    if (e.size === "full") {
+      div.style.top = `${PAD}px`;
+      div.style.height = `${FULL_H}px`;
+    } else if (e.size === "half") {
+      const slot = e.lane % 2; // 0 top, 1 bottom
+      div.style.top = `${PAD + slot * (HALF_H + GAP)}px`;
+      div.style.height = `${HALF_H}px`;
+    } else if (e.size === "third") {
+      const slot = Math.min(2, e.lane); // 0,1,2
+      div.style.top = `${PAD + slot * (THIRD_H + GAP)}px`;
+      div.style.height = `${THIRD_H}px`;
+    } else if (e.size === "big") {
+      // big + third pairing: either (small top, big bottom) OR (big top, small bottom)
+      // lane 0 => big top; lane 1 => big bottom
+      if ((e.lane % 2) === 0) {
+        div.style.top = `${PAD}px`;
+      } else {
+        div.style.top = `${PAD + THIRD_H + GAP}px`;
+      }
+      div.style.height = `${BIG_H}px`;
+    }
+
+    row.appendChild(div);
   });
 
   timeline.appendChild(row);
