@@ -8,7 +8,7 @@ const DAY_SPAN = 1440;
 const DAY_HEIGHT = 100;
 
 const TOTAL_BANDS = 3;
-const GAP = 4;
+const GAP = 6;
 
 /* ───── DOM ───── */
 
@@ -32,14 +32,13 @@ const toMinutes = t =>
 const normalize = m => (m < DAY_START ? m + 1440 : m);
 
 function classify(label) {
-  if (/^\d{4}\.$/.test(label)) return "sleep";
   const l = label.toLowerCase();
   if (l.includes("run") || l.includes("gym")) return "run";
-  if (l.includes("lunch") || l.includes("dinner")) return "food";
+  if (l.includes("lunch") || l.includes("dinner") || l.includes("breakfast")) return "food";
   return "work";
 }
 
-/* ───── generate 2026 days ───── */
+/* ───── generate days ───── */
 
 const days = [];
 const dayMap = {};
@@ -51,12 +50,12 @@ for (
 ) {
   const iso = d.toISOString().slice(0, 10);
   const label = d.toLocaleDateString("en-GB");
-  const day = { iso, label, events: [], sleepStart: null, wakeTime: null };
+  const day = { iso, label, events: [], wake: null, sleep: null };
   days.push(day);
   dayMap[iso] = day;
 }
 
-/* ───── load Google Doc ───── */
+/* ───── load doc ───── */
 
 fetch(DOC_URL)
   .then(r => r.text())
@@ -67,63 +66,51 @@ fetch(DOC_URL)
     lines.forEach(line => {
       const dm = line.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (dm) {
-        currentDay = dayMap[`${dm[3]}-${dm[2]}-${dm[1]}`] || null;
+        currentDay = dayMap[`${dm[3]}-${dm[2]}-${dm[1]}`];
         return;
       }
 
       if (!currentDay) return;
 
-      // sleep / wake format: 0843.
-      const sm = line.match(/^(\d{4})\.$/);
-      if (sm) {
-        const time = normalize(toMinutes(sm[1]));
-        if (time < DAY_START + 720) currentDay.wakeTime = time;
-        else currentDay.sleepStart = time;
+      // wake / sleep: XXXX.
+      const tm = line.match(/^(\d{4})\.$/);
+      if (tm) {
+        const t = normalize(toMinutes(tm[1]));
+        if (currentDay.wake === null) currentDay.wake = t;
+        else currentDay.sleep = t;
         return;
       }
 
-      const em = line.match(/^(\d{4})(?:-(\d{4}))?\s+(.*)$/);
+      const em = line.match(/^(\d{4})-(\d{4})\s+(.*)$/);
       if (!em) return;
 
-      const start = normalize(toMinutes(em[1]));
-      const end = em[2] ? normalize(toMinutes(em[2])) : start + 10;
-
-      currentDay.events.push({ start, end, label: em[3] });
+      currentDay.events.push({
+        start: normalize(toMinutes(em[1])),
+        end: normalize(toMinutes(em[2])),
+        label: em[3]
+      });
     });
 
-    days.forEach(renderDay);
+    days.forEach((d, i) => renderDay(d, days[i - 1]));
   });
 
 /* ───── layout engine ───── */
 
 function layoutEvents(events) {
   events.forEach(e => {
-    e.maxOverlap = 0;
-    events.forEach(o => {
-      if (e !== o && e.start < o.end && e.end > o.start) {
-        e.maxOverlap++;
-      }
-    });
-  });
-
-  events.forEach(e => {
-    if (e.maxOverlap >= 2) e.frac = 1 / 3;
-    else if (e.maxOverlap === 1) e.frac = 1 / 2;
-    else e.frac = 1;
+    e.overlap = events.filter(o =>
+      o !== e && e.start < o.end && e.end > o.start
+    ).length;
+    e.frac = e.overlap >= 2 ? 1/3 : e.overlap === 1 ? 1/2 : 1;
   });
 
   events.sort((a, b) => a.start - b.start);
   const active = [];
 
   events.forEach(e => {
-    for (let i = active.length - 1; i >= 0; i--) {
-      if (active[i].end <= e.start) active.splice(i, 1);
-    }
-
-    const used = active.map(ev => ev.band);
+    active.filter(a => a.end > e.start);
     let band = 0;
-    while (used.includes(band)) band++;
-
+    while (active.some(a => a.band === band)) band++;
     e.band = band;
     active.push(e);
   });
@@ -131,7 +118,7 @@ function layoutEvents(events) {
 
 /* ───── render ───── */
 
-function renderDay(day) {
+function renderDay(day, prevDay) {
   const row = document.createElement("div");
   row.className = "day-row";
 
@@ -140,46 +127,33 @@ function renderDay(day) {
   label.textContent = day.label;
   row.appendChild(label);
 
-  /* sleep block (previous night) */
-  if (day.sleepStart !== null && day.wakeTime !== null) {
-    const s = document.createElement("div");
-    s.className = "event sleep";
-
-    s.style.left = `${((day.sleepStart - DAY_START) / DAY_SPAN) * 100}%`;
-    s.style.width = `${((day.wakeTime - day.sleepStart) / DAY_SPAN) * 100}%`;
-    s.style.top = "0";
-    s.style.height = `${DAY_HEIGHT}px`;
-
-    row.appendChild(s);
+  /* sleep background */
+  if (prevDay && prevDay.sleep !== null && day.wake !== null) {
+    const bg = document.createElement("div");
+    bg.className = "sleep-bg";
+    bg.style.left = `${((prevDay.sleep - DAY_START) / DAY_SPAN) * 100}%`;
+    bg.style.width = `${((day.wake - prevDay.sleep) / DAY_SPAN) * 100}%`;
+    row.appendChild(bg);
   }
 
   layoutEvents(day.events);
 
-  const totalGap = GAP * (TOTAL_BANDS - 1);
-  const usableHeight = DAY_HEIGHT - totalGap;
-  const bandHeight = usableHeight / TOTAL_BANDS;
+  const usable = DAY_HEIGHT - GAP * (TOTAL_BANDS - 1);
+  const bandH = usable / TOTAL_BANDS;
 
   day.events.forEach(e => {
-    const div = document.createElement("div");
-    div.className = `event ${classify(e.label)}`;
-    div.textContent = e.label;
+    const el = document.createElement("div");
+    el.className = `event ${classify(e.label)}`;
+    el.textContent = e.label;
 
-    div.style.left =
-      `${((e.start - DAY_START) / DAY_SPAN) * 100}%`;
-    div.style.width =
-      `${((e.end - e.start) / DAY_SPAN) * 100}%`;
+    el.style.left = `${((e.start - DAY_START) / DAY_SPAN) * 100}%`;
+    el.style.width = `${((e.end - e.start) / DAY_SPAN) * 100}%`;
 
-    let bandsOccupied = e.frac === 1 ? 3 : e.frac === 1 / 2 ? 2 : 1;
+    const bands = e.frac === 1 ? 3 : e.frac === 1/2 ? 2 : 1;
+    el.style.height = `${bands * bandH + (bands - 1) * GAP}px`;
+    el.style.top = `${e.band * (bandH + GAP)}px`;
 
-    const height =
-      bandsOccupied * bandHeight +
-      (bandsOccupied - 1) * GAP;
-
-    div.style.height = `${height}px`;
-    div.style.top =
-      `${e.band * (bandHeight + GAP)}px`;
-
-    row.appendChild(div);
+    row.appendChild(el);
   });
 
   timeline.appendChild(row);
