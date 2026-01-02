@@ -12,6 +12,18 @@
 
   /* sleep background (flat, calm) */
   --sleep: #e6e8eb;
+
+
+  /* event categories (hashtag driven) */
+  --cat-default: #d1d5db; /* gray for events with no tag */
+
+  --cat-eth:   #215CAF; /* ETH Blue */
+  --cat-run:   #89F336; /* lime green */
+  --cat-leet:  #000000; /* black */
+  --cat-quant: #1E3A8A; /* Optiver blue */
+  --cat-duo:   #58CC02; /* Duolingo green */
+  --cat-aldi:  #FF7801; /* Aldi orange */
+  --cat-easy:  #FF6600; /* easyJet orange */
 }
 
 /* ───────── base ───────── */
@@ -22,100 +34,91 @@ body {
   background: var(--bg);
 }
 
-/* ───────── hour header ───────── */
+/* ───────── hour header (TEXT ONLY, NO LINES) ───────── */
 
-#hour-header{
-  display: flex;
+#hour-header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  height: 40px;
   background: var(--bg);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
-.hour{
-  flex: 1;
+.hour {
   text-align: center;
   font-size: 12px;
-  padding: 10px 0;
-  color: rgba(0,0,0,0.55);
-  user-select: none;
+  line-height: 40px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* 🚫 REMOVE ALL GRID LINES COMPLETELY */
+.hour::before,
+.hour::after {
+  display: none !important;
+  content: none !important;
 }
 
 /* ───────── timeline ───────── */
 
-#timeline{
-  width: 100%;
+#timeline {
+  width: 100vw;
   display: flex;
   flex-direction: column;
 }
 
-.day-row{
+/* ───────── day row ───────── */
+
+.day-row {
   position: relative;
-  width: 100%;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  overflow: hidden;
+  background: var(--bg);
 }
 
-/* vertical grid lines */
-.day-row::before{
-  content: "";
+/* date label stays above everything */
+.day-label {
   position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      to right,
-      rgba(0,0,0,0.06) 0px,
-      rgba(0,0,0,0.06) 1px,
-      transparent 1px,
-      transparent calc(100% / 24)
-    );
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* subtle half-hour lines */
-.day-row::after{
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      to right,
-      rgba(0,0,0,0.025) 0px,
-      rgba(0,0,0,0.025) 1px,
-      transparent 1px,
-      transparent calc(100% / 48)
-    );
-  z-index: 2;
-  pointer-events: none;
-}
-
-/* ───────── day label ───────── */
-
-.day-label{
-  position: absolute;
-  left: 14px;
-  top: 8px;
-  z-index: 30;
+  left: 6px;
+  top: 6px;
+  font-size: 12px;
   font-weight: 600;
-  font-size: 16px;
-  color: rgba(0,0,0,0.85);
-  pointer-events: none;
+  z-index: 6;
+  color: #111827;
 }
 
-/* ───────── sleep blocks ───────── */
+/* ───────── sleep background ───────── */
+/* flat, no transparency, no grid bleed */
 
-.sleep-bg{
+/* ───────── sleep background — diagonal wave pattern ───────── */
+
+/* ───────── sleep background — subtle wave lines only ───────── */
+
+/* ───────── sleep background — subtle dotted pattern ───────── */
+
+.sleep-bg {
   position: absolute;
   top: 0;
-  height: 100%;
-  background: var(--sleep);
-  z-index: 10;               /* above the grid lines */
-  pointer-events: none;
+  bottom: 0;
+  z-index: 2;
+  border-radius: 10px;
+
+  /* keep background white / transparent */
+  background-color: transparent;
+
+  /* light dotted pattern */
+  background-image: radial-gradient(
+    rgba(0, 0, 0, 0.10) 1px,
+    transparent 1px
+  );
+
+  background-size: 14px 14px;
 }
 
-/* ───────── events ───────── */
+
+
+
+/* ───────── events — LIQUID GLASS ───────── */
 
 .event {
   position: absolute;
@@ -125,14 +128,14 @@ body {
   font-weight: 500;
   box-sizing: border-box;
 
-  /* allow wrap (will clip if the box is too short) */
-  white-space: normal;
-  overflow: hidden;
-
-  /* icon + text */
   display: flex;
   align-items: flex-start;
   gap: 6px;
+
+  white-space: normal;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 
   /* glassmorphism */
   backdrop-filter: blur(10px) saturate(140%);
@@ -145,8 +148,70 @@ body {
 
   border: 1px solid rgba(255, 255, 255, 0.45);
 
+  /* default (no hashtag) */
+  background: var(--cat-default);
+  color: #111827;
+
   z-index: 5;
 }
+
+/* ───────── category icon ───────── */
+
+.event-icon{
+  height: 11px;        /* match text size */
+  width: auto;
+  flex: 0 0 auto;
+  margin-top: 1px;     /* tiny optical align to first line */
+}
+
+/* ───────── hashtag category colors ───────── */
+
+.event[data-cat="eth"]{
+  background: var(--cat-eth);
+  color: #ffffff;
+}
+
+.event[data-cat="run"]{
+  background: var(--cat-run);
+  color: #111827;
+}
+
+.event[data-cat="leet"]{
+  background: var(--cat-leet);
+  color: #ffffff;
+}
+
+/* LeetCode logo is black → invert on black background so it stays visible */
+.event[data-cat="leet"] .event-icon{
+  filter: invert(1);
+}
+
+.event[data-cat="quant"]{
+  background: var(--cat-quant);
+  color: #ffffff;
+}
+
+.event[data-cat="duo"]{
+  background: var(--cat-duo);
+  color: #ffffff;
+}
+
+.event[data-cat="aldi"]{
+  background: var(--cat-aldi);
+  color: #ffffff;
+}
+
+.event[data-cat="easy"]{
+  background: var(--cat-easy);
+  color: #ffffff;
+}
+
+.event-text{
+  min-width: 0;
+}
+
+/* ───────── glass-tinted pastel colors ───────── */
+/* (kept for compatibility; not used anymore unless you manually add those classes) */
 
 .event.work {
   background:
@@ -173,50 +238,4 @@ body {
       rgba(207, 225, 255, 0.75),
       rgba(207, 225, 255, 0.45)
     );
-}
-
-/* ───────── event categories (hashtags) ───────── */
-
-.event-icon{
-  height: 1em;            /* same as text height */
-  width: auto;
-  flex: 0 0 auto;
-  margin-top: 1px;        /* keep aligned to top baseline */
-}
-
-/* default (no tag) */
-.event.default{
-  background: #d6d8dc;
-}
-
-/* hashtag categories */
-.event.eth{
-  background: #215CAF;
-  color: #ffffff;
-}
-
-.event.run{
-  background: #CEFF00;
-}
-
-.event.leet{
-  background: #000000;
-  color: #ffffff;
-}
-
-.event.quant{
-  background: #1E3A8A;
-  color: #ffffff;
-}
-
-.event.duo{
-  background: #58CC02;
-}
-
-.event.aldi{
-  background: #F37D1E;
-}
-
-.event.easy{
-  background: #FF6600;
 }
