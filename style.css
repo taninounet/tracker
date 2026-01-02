@@ -120,8 +120,10 @@ body {
   /* IMPORTANT: no flex, so icon does NOT reserve layout space */
   white-space: normal;
   overflow: hidden;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: normal;  /* don't break words */
+  word-break: normal;     /* don't split words */
+  hyphens: none;
+
 
   /* glassmorphism */
   backdrop-filter: blur(10px) saturate(140%);
@@ -154,11 +156,18 @@ body {
 
 /* ✅ FIX: first line only gets indented so it doesn't sit under the icon.
    Wrapped lines start at the normal left edge again. */
+/* default: no indent */
 .event-text{
   display: block;
   min-width: 0;
-  text-indent: 18px; /* only first line */
+  text-indent: 0;
 }
+
+/* only when an icon exists (tagged events) */
+.event .event-icon + .event-text{
+  text-indent: 18px; /* first line only */
+}
+
 
 /* ───────── hashtag category colors ───────── */
 
