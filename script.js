@@ -3,12 +3,13 @@
 const DOC_URL =
   "https://docs.google.com/document/d/1WTC4OuGIHjd7BJMvV9gNSNjptupzSFCtRmtXEeY1Fbg/export?format=txt";
 
-const DAY_START = 5 * 60;
-const DAY_SPAN = 1440;
-const DAY_HEIGHT = 100;
+const DAY_START = 5 * 60;   // 05:00
+const DAY_SPAN = 1440;      // 24h window from DAY_START to next DAY_START
+const DAY_HEIGHT = 100;     // px height of each day row
 
-const PAD_FRAC = 0.03;
-const GAP_FRAC = 0.06;
+// padding and gaps as % of DAY_HEIGHT
+const PAD_FRAC = 0.03;      // 3% top + 3% bottom
+const GAP_FRAC = 0.06;      // 6% between stacked events (and therefore also 2*PAD)
 
 /* ───── DOM ───── */
 
@@ -28,47 +29,19 @@ for (let i = 0; i < 24; i++) {
 
 const toMinutes = t => parseInt(t.slice(0, 2)) * 60 + parseInt(t.slice(2));
 const normalize = m => (m < DAY_START ? m + 1440 : m);
-const overlaps = (a, b) => a.start < b.end && a.end > b.start;
 
-/* ───── TAG SYSTEM ───── */
-
-const TAGS = {
-  eth: {
-    class: "eth",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/e/ea/ETH_Zürich_Logo.svg"
-  },
-  run: {
-    class: "run",
-    icon: "https://cdn.eventtia.com/model_image_attachments/1591267/small/RUNSWOOSHVOLTORANGEportraitv217187513401718751340.png"
-  },
-  leet: {
-    class: "leet",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png"
-  },
-  quant: {
-    class: "quant",
-    icon: "https://dbpxikdadyyelyemwaef.supabase.co/storage/v1/object/public/logos//optiverLogo.svg"
-  },
-  duo: {
-    class: "duo",
-    icon: "https://pngdownload.io/wp-content/uploads/2023/12/Duolingo-logo-language-learning-app-owl-logo-transparent-png-jpg.webp"
-  },
-  sbb: {
-    class: "sbb",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/SBB_logo_simplified.svg/1200px-SBB_logo_simplified.svg.png"
-  }
-};
-
-function extractTag(label) {
-  const m = label.match(/#([a-z]+)/i);
-  return m ? m[1].toLowerCase() : null;
+function classify(label) {
+  const l = label.toLowerCase();
+  if (l.includes("run") || l.includes("gym")) return "run";
+  if (l.includes("lunch") || l.includes("dinner") || l.includes("breakfast")) return "food";
+  return "work";
 }
 
-function cleanLabel(label) {
-  return label.replace(/#\w+/gi, "").trim();
+function overlaps(a, b) {
+  return a.start < b.end && a.end > b.start;
 }
 
-/* ───── generate days ───── */
+/* ───── generate 2026 days ───── */
 
 const days = [];
 const dayMap = {};
@@ -85,7 +58,7 @@ for (
   dayMap[iso] = day;
 }
 
-/* ───── load doc ───── */
+/* ───── load Google Doc ───── */
 
 fetch(DOC_URL)
   .then(r => r.text())
@@ -94,27 +67,32 @@ fetch(DOC_URL)
     let currentDay = null;
 
     lines.forEach(line => {
+      // date header
       const dm = line.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (dm) {
-        currentDay = dayMap[`${dm[3]}-${dm[2]}-${dm[1]}`];
+        currentDay = dayMap[`${dm[3]}-${dm[2]}-${dm[1]}`] || null;
         return;
       }
       if (!currentDay) return;
 
+      // wake/sleep marker like "0913."
       const tm = line.match(/^(\d{4})\.$/);
       if (tm) {
         currentDay.dotTimes.push(normalize(toMinutes(tm[1])));
         return;
       }
 
+      // normal event
       const em = line.match(/^(\d{4})(?:-(\d{4}))?\s+(.*)$/);
       if (!em) return;
 
       const start = normalize(toMinutes(em[1]));
       const end = em[2] ? normalize(toMinutes(em[2])) : start + 10;
+
       currentDay.events.push({ start, end, label: em[3] });
     });
 
+    // decide wake (first dotted time) + sleep (last dotted time) per day
     days.forEach(d => {
       if (d.dotTimes.length) {
         d.wake = d.dotTimes[0];
@@ -125,7 +103,72 @@ fetch(DOC_URL)
     days.forEach(renderDay);
   });
 
-/* ───── layout + render ───── */
+/* ───── layout engine ─────
+   Rules:
+   - if an event overlaps *two other* events at the same time at ANY point → fixed "third" height forever
+   - otherwise if it overlaps exactly one other at ANY point → fixed "half" height forever
+   - BUT if a "half" event overlaps any "third" event at any point → it becomes the big 61% height forever
+*/
+
+function layoutEvents(events) {
+  // compute per-event maximum simultaneous overlap inside its own interval
+  events.forEach(e => {
+    const boundaries = [];
+    events.forEach(o => {
+      if (e === o) return;
+      if (!overlaps(e, o)) return;
+
+      // overlap segment within e
+      boundaries.push({ t: Math.max(e.start, o.start), type: "start" });
+      boundaries.push({ t: Math.min(e.end, o.end), type: "end" });
+    });
+
+    boundaries.sort((a, b) => (a.t - b.t) || (a.type === "end" ? -1 : 1));
+
+    let active = 0;
+    let maxSimul = 0;
+    for (const p of boundaries) {
+      if (p.type === "start") {
+        active++;
+        maxSimul = Math.max(maxSimul, active);
+      } else {
+        active = Math.max(0, active - 1);
+      }
+    }
+    // maxSimul is how many OTHER events overlap simultaneously; total in that interval is maxSimul + 1 (itself)
+    e.maxSimul = maxSimul + 1;
+  });
+
+  // base kind
+  events.forEach(e => {
+    if (e.maxSimul >= 3) e.kind = "third";       // triple-share exists somewhere
+    else if (e.maxSimul === 2) e.kind = "half";  // at most double-share
+    else e.kind = "full";
+  });
+
+  // promotion: any "half" overlapping a "third" becomes "big"
+  const thirds = events.filter(e => e.kind === "third");
+  events.forEach(e => {
+    if (e.kind !== "half") return;
+    if (thirds.some(t => overlaps(e, t))) {
+      e.kind = "big";
+    }
+  });
+
+  // lane assignment (0..2) with greedy coloring
+  events.sort((a, b) => a.start - b.start || a.end - b.end);
+  const laneEnd = [-Infinity, -Infinity, -Infinity];
+
+  events.forEach(e => {
+    let lane = 0;
+    while (lane < 3 && laneEnd[lane] > e.start) lane++;
+    if (lane >= 3) lane = 2;
+    e.lane = lane;
+    laneEnd[lane] = e.end;
+  });
+}
+
+/* ───── render ───── */
 
 function renderDay(day) {
   const row = document.createElement("div");
@@ -137,38 +180,80 @@ function renderDay(day) {
   label.textContent = day.label;
   row.appendChild(label);
 
+  // sleep background blocks (always full height, no vertical padding)
   addSleepBlocks(row, day);
+
+  // normal events
+  layoutEvents(day.events);
 
   const PAD = DAY_HEIGHT * PAD_FRAC;
   const GAP = DAY_HEIGHT * GAP_FRAC;
 
-  day.events.forEach(e => {
-    const div = document.createElement("div");
-
-    const tag = extractTag(e.label);
-    const meta = tag && TAGS[tag];
-    const text = cleanLabel(e.label);
-
-    div.className = `event ${meta ? meta.class : "default"}`;
-
-    if (meta?.icon) {
-      const img = document.createElement("img");
-      img.className = "icon";
-      img.src = meta.icon;
-      div.appendChild(img);
+  // helper giving top+height for a given event in this day
+  function verticalBox(e) {
+    // full height event
+    if (e.kind === "full") {
+      return { top: PAD, height: DAY_HEIGHT - 2 * PAD };
     }
 
-    const span = document.createElement("span");
-    span.textContent = text;
-    div.appendChild(span);
+    // pure 2-stack (half/half)
+    if (e.kind === "half") {
+      const h = DAY_HEIGHT * 0.44;
+      const top = e.lane === 0 ? PAD : (PAD + h + GAP);
+      return { top, height: h };
+    }
 
+    // pure 3-stack (third/third/third): 27/28/27
+    if (e.kind === "third") {
+      const h0 = DAY_HEIGHT * 0.27;
+      const h1 = DAY_HEIGHT * 0.28;
+      const top0 = PAD;
+      const top1 = top0 + h0 + GAP;
+      const top2 = top1 + h1 + GAP;
+
+      if (e.lane === 1) return { top: top1, height: h1 };
+      if (e.lane === 2) return { top: top2, height: h0 };
+      return { top: top0, height: h0 };
+    }
+
+    // mixed stack (big + one third): 27 + gap6 + 61 (or reversed)
+    if (e.kind === "big") {
+      const bigH = DAY_HEIGHT * 0.61;
+      const smallH = DAY_HEIGHT * 0.27;
+
+      // find an overlapping third event to decide whether big goes on top or bottom
+      const t = day.events.find(o => o !== e && o.kind === "third" && overlaps(e, o));
+
+      // default: big on bottom
+      let bigOnTop = false;
+
+      // if lanes suggest a stable ordering, follow it
+      if (t) bigOnTop = e.lane < t.lane;
+      else bigOnTop = (e.lane === 0);
+
+      const topBig = bigOnTop ? PAD : (PAD + smallH + GAP);
+      return { top: topBig, height: bigH };
+    }
+
+    // fallback
+    return { top: PAD, height: DAY_HEIGHT - 2 * PAD };
+  }
+
+  day.events.forEach(e => {
+    const div = document.createElement("div");
+    div.className = `event ${classify(e.label)}`;
+    div.textContent = e.label;
+
+    // horizontal placement
     const leftPct = ((e.start - DAY_START) / DAY_SPAN) * 100;
     const widthPct = ((e.end - e.start) / DAY_SPAN) * 100;
-
     div.style.left = `${leftPct}%`;
     div.style.width = `${widthPct}%`;
-    div.style.top = `${PAD}px`;
-    div.style.height = `${DAY_HEIGHT - 2 * PAD}px`;
+
+    // vertical placement
+    const { top, height } = verticalBox(e);
+    div.style.top = `${top}px`;
+    div.style.height = `${height}px`;
 
     row.appendChild(div);
   });
@@ -191,6 +276,13 @@ function addSleepBlocks(row, day) {
     row.appendChild(div);
   }
 
-  if (day.wake > DAY_START) addBlock(DAY_START, day.wake);
-  if (day.sleep < spanEnd) addBlock(day.sleep, spanEnd);
+  // Morning sleep: from 05:00 to wake
+  if (typeof day.wake === "number" && day.wake > DAY_START) {
+    addBlock(DAY_START, day.wake);
+  }
+
+  // Evening sleep: from sleep time to end of page (05:00 next day)
+  if (typeof day.sleep === "number" && day.sleep < spanEnd) {
+    addBlock(day.sleep, spanEnd);
+  }
 }
