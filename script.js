@@ -32,8 +32,8 @@ const toMinutes = t =>
 const normalize = m => (m < DAY_START ? m + 1440 : m);
 
 function classify(label) {
+  if (/^\d{4}\.$/.test(label)) return "sleep";
   const l = label.toLowerCase();
-  if (l.includes("sleep")) return "sleep";
   if (l.includes("run") || l.includes("gym")) return "run";
   if (l.includes("lunch") || l.includes("dinner")) return "food";
   return "work";
@@ -51,7 +51,7 @@ for (
 ) {
   const iso = d.toISOString().slice(0, 10);
   const label = d.toLocaleDateString("en-GB");
-  const day = { iso, label, events: [] };
+  const day = { iso, label, events: [], sleepStart: null, wakeTime: null };
   days.push(day);
   dayMap[iso] = day;
 }
@@ -73,6 +73,15 @@ fetch(DOC_URL)
 
       if (!currentDay) return;
 
+      // sleep / wake format: 0843.
+      const sm = line.match(/^(\d{4})\.$/);
+      if (sm) {
+        const time = normalize(toMinutes(sm[1]));
+        if (time < DAY_START + 720) currentDay.wakeTime = time;
+        else currentDay.sleepStart = time;
+        return;
+      }
+
       const em = line.match(/^(\d{4})(?:-(\d{4}))?\s+(.*)$/);
       if (!em) return;
 
@@ -88,7 +97,6 @@ fetch(DOC_URL)
 /* ───── layout engine ───── */
 
 function layoutEvents(events) {
-  // max overlap per event
   events.forEach(e => {
     e.maxOverlap = 0;
     events.forEach(o => {
@@ -98,14 +106,12 @@ function layoutEvents(events) {
     });
   });
 
-  // height fraction (fixed forever)
   events.forEach(e => {
     if (e.maxOverlap >= 2) e.frac = 1 / 3;
     else if (e.maxOverlap === 1) e.frac = 1 / 2;
     else e.frac = 1;
   });
 
-  // assign bands (0,1,2)
   events.sort((a, b) => a.start - b.start);
   const active = [];
 
@@ -134,6 +140,19 @@ function renderDay(day) {
   label.textContent = day.label;
   row.appendChild(label);
 
+  /* sleep block (previous night) */
+  if (day.sleepStart !== null && day.wakeTime !== null) {
+    const s = document.createElement("div");
+    s.className = "event sleep";
+
+    s.style.left = `${((day.sleepStart - DAY_START) / DAY_SPAN) * 100}%`;
+    s.style.width = `${((day.wakeTime - day.sleepStart) / DAY_SPAN) * 100}%`;
+    s.style.top = "0";
+    s.style.height = `${DAY_HEIGHT}px`;
+
+    row.appendChild(s);
+  }
+
   layoutEvents(day.events);
 
   const totalGap = GAP * (TOTAL_BANDS - 1);
@@ -145,26 +164,12 @@ function renderDay(day) {
     div.className = `event ${classify(e.label)}`;
     div.textContent = e.label;
 
-    // horizontal placement
     div.style.left =
       `${((e.start - DAY_START) / DAY_SPAN) * 100}%`;
     div.style.width =
       `${((e.end - e.start) / DAY_SPAN) * 100}%`;
 
-    // promotion rule
-    const promoted =
-      e.frac === 1 / 2 &&
-      day.events.some(o =>
-        o !== e &&
-        o.frac === 1 / 3 &&
-        e.start < o.end &&
-        e.end > o.start
-      );
-
-    let bandsOccupied;
-    if (e.frac === 1) bandsOccupied = 3;
-    else if (e.frac === 1 / 3) bandsOccupied = 1;
-    else bandsOccupied = promoted ? 2 : 1;
+    let bandsOccupied = e.frac === 1 ? 3 : e.frac === 1 / 2 ? 2 : 1;
 
     const height =
       bandsOccupied * bandHeight +
